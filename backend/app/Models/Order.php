@@ -73,7 +73,7 @@ class Order extends Model
         'delivery_address',
         'scheduled_time',
         'notes',
-        'coupon_code',
+        // 'coupon_code',
         'special_instructions',
         'prepared_at',
         'completed_at',
@@ -90,16 +90,16 @@ class Order extends Model
     /**
      * Generate unique order number.
      */
-    protected static function boot()
-    {
-        parent::boot();
+    // protected static function boot()
+    // {
+    //     parent::boot();
 
-        static::creating(function ($order) {
-            if (!$order->order_number) {
-                $order->order_number = 'ORD-' . date('Ymd') . '-' . str_pad(static::count() + 1, 4, '0', STR_PAD_LEFT);
-            }
-        });
-    }
+    //     static::creating(function ($order) {
+    //         if (!$order->order_number) {
+    //             $order->order_number = 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+    //         }
+    //     });
+    // }
 
     /**
      * Get the user that owns the order.

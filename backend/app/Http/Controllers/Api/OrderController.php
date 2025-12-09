@@ -81,7 +81,7 @@ class OrderController extends BaseController
                 'delivery_address_id' => $request->input('delivery_address_id'),
                 'scheduled_time' => $request->input('scheduled_time'),
                 'notes' => $request->input('notes'),
-                'coupon_code' => $request->input('coupon_code'),
+                // 'coupon_code' => $request->input('coupon_code'),
             ]);
 
             // Create order items
@@ -133,6 +133,31 @@ class OrderController extends BaseController
                 $query->where('status', $status);
             }
 
+            // Filter by order type
+            $orderType = $request->input('order_type');
+            if ($orderType !== null) {
+                $query->where('order_type', $orderType);
+            }
+
+            // Filter by date range
+            if ($request->has('date_from')) {
+                $query->whereDate('created_at', '>=', $request->input('date_from'));
+            }
+            if ($request->has('date_to')) {
+                $query->whereDate('created_at', '<=', $request->input('date_to'));
+            }
+
+            // Search by order number or product name
+            $search = $request->input('search');
+            if ($search !== null) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('order_number', 'like', '%' . $search . '%')
+                      ->orWhereHas('orderItems.product', function ($productQuery) use ($search) {
+                          $productQuery->where('name', 'like', '%' . $search . '%');
+                      });
+                });
+            }
+
             // Sort by created_at descending
             $orders = $query->orderBy('created_at', 'desc')
                 ->paginate(15);
@@ -156,7 +181,7 @@ class OrderController extends BaseController
 
             $order = Order::where('user_id', $user->id)
                 ->where('id', $id)
-                ->with(['orderItems.product', 'user'])
+                ->with(['orderItems.product', 'user', 'deliveryAddress'])
                 ->first();
 
             if (!$order) {
@@ -232,7 +257,9 @@ class OrderController extends BaseController
                 'order_number' => $orderNumber,
                 'status' => 'pending',
                 'order_type' => $originalOrder->order_type,
-                'total_amount' => $totalAmount,
+                'subtotal' => $totalAmount,
+                'delivery_fee' => $originalOrder->delivery_fee ?? 0,
+                'total_amount' => $totalAmount + ($originalOrder->delivery_fee ?? 0),
                 'payment_method' => $originalOrder->payment_method,
                 'payment_status' => 'pending',
             ]);

@@ -13,11 +13,16 @@ const Footer = () => {
           {/* Brand Section */}
           <Col md={4} className="mb-4">
             <div className="d-flex align-items-center mb-3">
-              <FaCoffee size={32} className="text-success me-2" />
-              <h4 className="mb-0 text-white">Arbiter Coffee</h4>
+              <img 
+                src="/assets/arbiter-logo-white.png" 
+                height="40"
+                className="me-2"
+                style={{ objectFit: 'contain' }}
+              />
+              <h4 className="mb-0 text-white">Arbiter Coffee Hub</h4>
             </div>
             <p className="text-light">
-              Premium coffee experience delivered with passion. Serving the finest coffee beans
+              Specialty coffee experience delivered with passion. Serving the finest coffee beans
               and artisan beverages since our establishment.
             </p>
             <div className="d-flex gap-3 mt-3">
@@ -107,7 +112,7 @@ const Footer = () => {
         <Row>
           <Col md={6} className="text-center text-md-start mb-3 mb-md-0">
             <p className="text-light mb-0">
-              &copy; {currentYear} Arbiter Coffee Shop. All rights reserved.
+              &copy; {currentYear} Arbiter Coffee Hub. All rights reserved.
             </p>
           </Col>
           <Col md={6} className="text-center text-md-end">

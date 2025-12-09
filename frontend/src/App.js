@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { NotificationProvider } from './components/common/NotificationSystem';
 
 // Layout Components
 import Navbar from './components/layout/Navbar';
@@ -24,6 +25,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerProfile from './pages/customer/CustomerProfile';
 import OrderHistory from './pages/customer/OrderHistory';
+import OrderDetailPage from './pages/customer/OrderDetailPage';
 import CartPage from './pages/customer/CartPage';
 import CheckoutPage from './pages/customer/CheckoutPage';
 
@@ -47,7 +49,8 @@ function App() {
     <Router>
       <AuthProvider>
         <CartProvider>
-          <div className="App d-flex flex-column min-vh-100">
+          <NotificationProvider>
+            <div className="App d-flex flex-column min-vh-100">
             <Navbar />
             <main className="flex-grow-1">
               <Routes>
@@ -86,6 +89,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <OrderHistory />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders/:id"
+                  element={
+                    <ProtectedRoute>
+                      <OrderDetailPage />
                     </ProtectedRoute>
                   }
                 />
@@ -147,8 +158,9 @@ function App() {
             </main>
             <Footer />
           </div>
-        </CartProvider>
-      </AuthProvider>
+        </NotificationProvider>
+      </CartProvider>
+    </AuthProvider>
     </Router>
   );
 }

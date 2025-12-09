@@ -7,7 +7,6 @@ use Tests\TestHelpers;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
-use App\Services\MLService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\Cache;
@@ -18,7 +17,6 @@ class AnalyticsTest extends TestCase
     use RefreshDatabase, WithFaker, TestHelpers;
 
     protected User $admin;
-    protected $mlService;
 
     protected function setUp(): void
     {
@@ -33,10 +31,6 @@ class AnalyticsTest extends TestCase
             'email' => 'admin@test.com'
         ]);
         $this->admin->assignRole('admin');
-
-        // Mock ML Service and bind to container
-        $this->mlService = $this->mock(MLService::class);
-        app()->instance(MLService::class, $this->mlService);
 
         // Create test data
         $this->createTestData();

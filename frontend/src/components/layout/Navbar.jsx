@@ -22,8 +22,13 @@ const Navbar = () => {
     <BSNavbar bg="dark" variant="dark" expand="lg" expanded={expanded} onToggle={setExpanded} sticky="top" className="shadow-sm">
       <Container>
         <BSNavbar.Brand as={Link} to="/" onClick={closeNav} className="d-flex align-items-center">
-          <FaCoffee className="me-2" size={28} />
-          <span className="fw-bold">Arbiter Coffee</span>
+          <img 
+            src="/assets/arbiter-logo.png" 
+            height="40" 
+            className="me-2"
+            style={{ objectFit: 'contain' }}
+          />
+          <span className="fw-bold">Arbiter Coffee Hub</span>
         </BSNavbar.Brand>
         
         <BSNavbar.Toggle aria-controls="basic-navbar-nav" />

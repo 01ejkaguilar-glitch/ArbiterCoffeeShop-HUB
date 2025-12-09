@@ -35,14 +35,41 @@ apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
     if (error.response) {
       // Handle specific error codes
       switch (error.response.status) {
         case 401:
-          // Unauthorized - Clear token and redirect to login
+          // Unauthorized - Try to refresh token first (except for auth endpoints)
+          if (!originalRequest.url.includes('/auth/') && !originalRequest._retry) {
+            originalRequest._retry = true;
+            try {
+              const refreshResponse = await apiClient.post('/auth/refresh-token');
+              if (refreshResponse.data.success) {
+                const { token, expires_in } = refreshResponse.data.data;
+
+                // Calculate new token expiry
+                const expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + 7);
+
+                localStorage.setItem('authToken', token);
+                localStorage.setItem('tokenExpiry', expiryDate.toISOString());
+
+                // Retry the original request with new token
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                return apiClient(originalRequest);
+              }
+            } catch (refreshError) {
+              console.error('Token refresh failed:', refreshError);
+            }
+          }
+
+          // If refresh failed or it's an auth endpoint, clear token and redirect
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
+          localStorage.removeItem('tokenExpiry');
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
           }
@@ -79,8 +106,16 @@ apiClient.interceptors.response.use(
 
 // API Service methods
 const apiService = {
+  // Check if user is online
+  isOnline: () => {
+    return navigator.onLine;
+  },
+
   // GET request
   get: async (url, params = {}) => {
+    if (!apiService.isOnline()) {
+      throw new Error('No internet connection');
+    }
     try {
       const response = await apiClient.get(url, { params });
       return response.data;

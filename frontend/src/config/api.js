@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
     REGISTER: `${API_BASE_URL}/auth/register`,
     LOGOUT: `${API_BASE_URL}/auth/logout`,
     USER: `${API_BASE_URL}/auth/user`,
+    REFRESH_TOKEN: `${API_BASE_URL}/auth/refresh-token`,
     FORGOT_PASSWORD: `${API_BASE_URL}/auth/forgot-password`,
     RESET_PASSWORD: `${API_BASE_URL}/auth/reset-password`,
   },
@@ -64,8 +65,16 @@ export const API_ENDPOINTS = {
   CUSTOMER: {
     DASHBOARD: `${API_BASE_URL}/customer/dashboard`,
     PROFILE: `${API_BASE_URL}/customer/profile`,
+    PROFILE_PICTURE: `${API_BASE_URL}/customer/profile/picture`,
+    ANALYTICS: `${API_BASE_URL}/customer/analytics`,
+    NOTIFICATIONS: `${API_BASE_URL}/customer/notifications`,
+    TASTE_PREFERENCES: `${API_BASE_URL}/customer/taste-preferences`,
+    FAVORITES: `${API_BASE_URL}/customer/favorites`,
+    FAVORITE_DETAIL: (id) => `${API_BASE_URL}/customer/favorites/${id}`,
+    TOGGLE_FAVORITE: `${API_BASE_URL}/customer/favorites/toggle`,
     ADDRESSES: `${API_BASE_URL}/customer/addresses`,
     ADDRESS_DETAIL: (id) => `${API_BASE_URL}/customer/addresses/${id}`,
+    DEACTIVATE_ACCOUNT: `${API_BASE_URL}/customer/account`,
   },
 
   // Payments

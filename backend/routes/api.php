@@ -213,6 +213,16 @@ Route::prefix('v1')->group(function () {
             Route::get('/customer/dashboard', [CustomerController::class, 'dashboard']);
             Route::get('/customer/profile', [CustomerController::class, 'getProfile']);
             Route::put('/customer/profile', [CustomerController::class, 'updateProfile']);
+            Route::post('/customer/profile/picture', [CustomerController::class, 'uploadProfilePicture']);
+            Route::get('/customer/analytics', [CustomerController::class, 'getOrderAnalytics']);
+            Route::put('/customer/notifications', [CustomerController::class, 'updateNotificationPreferences']);
+            Route::delete('/customer/account', [CustomerController::class, 'deactivateAccount']);
+
+            // Customer Favorites/Wishlist
+            Route::get('/customer/favorites', [CustomerController::class, 'getFavorites']);
+            Route::post('/customer/favorites', [CustomerController::class, 'addFavorite']);
+            Route::delete('/customer/favorites/{id}', [CustomerController::class, 'removeFavorite']);
+            Route::post('/customer/favorites/toggle', [CustomerController::class, 'toggleFavorite']);
 
             // Customer Addresses
             Route::get('/customer/addresses', [AddressController::class, 'index']);

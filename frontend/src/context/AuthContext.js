@@ -25,21 +25,111 @@ export const AuthProvider = ({ children }) => {
   // Check if user is logged in on mount
   useEffect(() => {
     checkAuth();
+
+    // Listen for online/offline events
+    const handleOnline = () => {
+      console.log('User came back online, re-checking authentication...');
+      checkAuth();
+    };
+
+    const handleOffline = () => {
+      console.log('User went offline');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem('authToken');
-      if (token) {
-        const response = await apiService.get(API_ENDPOINTS.AUTH.USER);
-        if (response.success) {
-          setUser(response.data);
-          setIsAuthenticated(true);
+      const storedUser = localStorage.getItem('user');
+      const tokenExpiry = localStorage.getItem('tokenExpiry');
+
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      // Check if user is online
+      if (!apiService.isOnline()) {
+        console.log('Offline: Using cached user data');
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            setIsAuthenticated(true);
+          } catch (parseError) {
+            console.error('Failed to parse cached user data');
+          }
         }
+        setLoading(false);
+        return;
+      }
+
+      // Check if token is expired locally first
+      if (tokenExpiry && new Date(tokenExpiry) < new Date()) {
+        console.log('Token expired locally, attempting refresh...');
+        const refreshSuccess = await refreshToken();
+        if (!refreshSuccess) {
+          logout();
+          return;
+        }
+      }
+
+      // Try to get fresh user data
+      const response = await apiService.get(API_ENDPOINTS.AUTH.USER);
+      if (response.success) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        // Update stored user data
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      } else {
+        throw new Error('Invalid response');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      logout();
+
+      // Handle different error types
+      if (error.message === 'No internet connection') {
+        // Offline - use cached data
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            setIsAuthenticated(true);
+            console.log('Using cached user data (offline mode)');
+          } catch (parseError) {
+            logout();
+          }
+        } else {
+          logout();
+        }
+      } else if (error.response?.status === 401) {
+        // Authentication error
+        logout();
+      } else {
+        // Other errors - try to use cached data
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            setIsAuthenticated(true);
+            console.log('Using cached user data due to server error');
+          } catch (parseError) {
+            logout();
+          }
+        } else {
+          logout();
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -53,14 +143,21 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (response.success) {
-        const { token, user } = response.data;
+        const { token, user, expires_in } = response.data;
+
+        // Calculate token expiry (expires_in is "7 days")
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 7); // Add 7 days
+
         localStorage.setItem('authToken', token);
         localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('tokenExpiry', expiryDate.toISOString());
+
         setUser(user);
         setIsAuthenticated(true);
         return { success: true, user };
       }
-      
+
       return { success: false, message: response.message };
     } catch (error) {
       console.error('Login error:', error);
@@ -76,9 +173,16 @@ export const AuthProvider = ({ children }) => {
       const response = await apiService.post(API_ENDPOINTS.AUTH.REGISTER, userData);
       
       if (response.success) {
-        const { token, user } = response.data;
+        const { token, user, expires_in } = response.data;
+
+        // Calculate token expiry (expires_in is "7 days")
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 7); // Add 7 days
+
         localStorage.setItem('authToken', token);
         localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('tokenExpiry', expiryDate.toISOString());
+
         setUser(user);
         setIsAuthenticated(true);
         return { success: true, user };
@@ -103,10 +207,55 @@ export const AuthProvider = ({ children }) => {
     } finally {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
+      localStorage.removeItem('tokenExpiry');
       setUser(null);
       setIsAuthenticated(false);
     }
   };
+
+  const refreshToken = async () => {
+    try {
+      const response = await apiService.post(API_ENDPOINTS.AUTH.REFRESH_TOKEN);
+      if (response.success) {
+        const { token, expires_in } = response.data;
+
+        // Calculate new token expiry
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 7); // Add 7 days
+
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('tokenExpiry', expiryDate.toISOString());
+
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return false;
+    }
+  };
+
+  // Periodic token refresh (every 6 hours when user is active)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const refreshInterval = setInterval(async () => {
+      const tokenExpiry = localStorage.getItem('tokenExpiry');
+      if (tokenExpiry) {
+        const expiryDate = new Date(tokenExpiry);
+        const now = new Date();
+        const timeUntilExpiry = expiryDate - now;
+
+        // Refresh if token expires within 2 hours
+        if (timeUntilExpiry < 2 * 60 * 60 * 1000) {
+          console.log('Auto-refreshing token...');
+          await refreshToken();
+        }
+      }
+    }, 6 * 60 * 60 * 1000); // Check every 6 hours
+
+    return () => clearInterval(refreshInterval);
+  }, [isAuthenticated]);
 
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
@@ -122,6 +271,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     checkAuth,
+    refreshToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

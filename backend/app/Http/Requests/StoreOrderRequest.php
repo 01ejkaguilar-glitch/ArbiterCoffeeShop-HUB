@@ -29,7 +29,7 @@ class StoreOrderRequest extends FormRequest
             'delivery_address_id' => 'nullable|exists:addresses,id',
             'scheduled_time' => 'nullable|date|after:now',
             'notes' => 'nullable|string|max:1000',
-            'coupon_code' => 'nullable|string|exists:coupons,code',
+            // 'coupon_code' => 'nullable|string|exists:coupons,code',
         ];
     }
 

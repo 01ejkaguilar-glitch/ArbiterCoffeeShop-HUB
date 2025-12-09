@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, ListGroup, Modal, Spinner } from 'react-bootstrap';
-import { FaMapMarkerAlt, FaPlus, FaTrash, FaEdit } from 'react-icons/fa';
+import { Container, Row, Col, Card, Form, Button, Alert, ListGroup, Modal, Spinner, Image } from 'react-bootstrap';
+import { FaMapMarkerAlt, FaPlus, FaTrash, FaEdit, FaClock, FaQrcode } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
@@ -16,10 +16,12 @@ const CheckoutPage = () => {
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [orderType, setOrderType] = useState('delivery');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [pickupTime, setPickupTime] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [showPaymentQR, setShowPaymentQR] = useState(false);
   const [addressForm, setAddressForm] = useState({
     type: 'home',
     street: '',
@@ -49,7 +51,7 @@ const CheckoutPage = () => {
 
   const fetchAddresses = async () => {
     try {
-      const response = await apiService.get(API_ENDPOINTS.ADDRESSES);
+      const response = await apiService.get(API_ENDPOINTS.CUSTOMER.ADDRESSES);
       if (response.success) {
         setAddresses(response.data);
         const defaultAddress = response.data.find(addr => addr.is_default);
@@ -72,7 +74,7 @@ const CheckoutPage = () => {
   const handleAddAddress = async (e) => {
     e.preventDefault();
     try {
-      const response = await apiService.post(API_ENDPOINTS.ADDRESSES, addressForm);
+      const response = await apiService.post(API_ENDPOINTS.CUSTOMER.ADDRESSES, addressForm);
       if (response.success) {
         setAddresses([...addresses, response.data]);
         setSelectedAddressId(response.data.id);
@@ -126,10 +128,21 @@ const CheckoutPage = () => {
         orderData.delivery_address_id = selectedAddressId;
       }
 
+      // Add pickup time if take-out order
+      if (orderType === 'take-out' && pickupTime) {
+        orderData.pickup_time = pickupTime;
+      }
+
       // Create order
       const response = await apiService.post(API_ENDPOINTS.ORDERS.CREATE, orderData);
 
       if (response.success) {
+        // Show payment QR for digital payments
+        if (['gcash', 'maya'].includes(paymentMethod)) {
+          setShowPaymentQR(true);
+          return; // Don't clear cart yet, wait for payment confirmation
+        }
+
         // Clear cart after successful order
         await clearCart();
         
@@ -200,6 +213,39 @@ const CheckoutPage = () => {
             </Card.Body>
           </Card>
 
+          {/* Pickup Time Selection for Take-out */}
+          {orderType === 'take-out' && (
+            <Card className="shadow-sm mb-4">
+              <Card.Header className="bg-info text-white">
+                <h5 className="mb-0">
+                  <FaClock className="me-2" />
+                  Pickup Time
+                </h5>
+              </Card.Header>
+              <Card.Body>
+                <Form.Group>
+                  <Form.Label>Select pickup time:</Form.Label>
+                  <Form.Select
+                    value={pickupTime}
+                    onChange={(e) => setPickupTime(e.target.value)}
+                    required={orderType === 'take-out'}
+                  >
+                    <option value="">Select a time</option>
+                    <option value="asap">ASAP (Ready in 15-20 minutes)</option>
+                    <option value="30min">In 30 minutes</option>
+                    <option value="1hour">In 1 hour</option>
+                    <option value="2hours">In 2 hours</option>
+                    <option value="tomorrow_morning">Tomorrow morning (9:00 AM)</option>
+                    <option value="tomorrow_afternoon">Tomorrow afternoon (2:00 PM)</option>
+                  </Form.Select>
+                  <Form.Text className="text-muted">
+                    Business hours: Monday-Sunday, 7:00 AM - 10:00 PM
+                  </Form.Text>
+                </Form.Group>
+              </Card.Body>
+            </Card>
+          )}
+
           {/* Delivery Address */}
           {orderType === 'delivery' && (
             <Card className="shadow-sm mb-4">
@@ -263,25 +309,35 @@ const CheckoutPage = () => {
                   value="cash"
                   checked={paymentMethod === 'cash'}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mb-2"
+                  className="mb-3"
                 />
                 <Form.Check
                   type="radio"
                   name="payment"
-                  label="GCash"
+                  label={
+                    <div className="d-flex align-items-center">
+                      <span>GCash</span>
+                      <small className="text-muted ms-2">(QR code will be shown after order)</small>
+                    </div>
+                  }
                   value="gcash"
                   checked={paymentMethod === 'gcash'}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mb-2"
+                  className="mb-3"
                 />
                 <Form.Check
                   type="radio"
                   name="payment"
-                  label="Maya"
+                  label={
+                    <div className="d-flex align-items-center">
+                      <span>Maya</span>
+                      <small className="text-muted ms-2">(QR code will be shown after order)</small>
+                    </div>
+                  }
                   value="maya"
                   checked={paymentMethod === 'maya'}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mb-2"
+                  className="mb-3"
                 />
                 <Form.Check
                   type="radio"
@@ -290,9 +346,17 @@ const CheckoutPage = () => {
                   value="card"
                   checked={paymentMethod === 'card'}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mb-2"
+                  className="mb-3"
                 />
               </Form>
+
+              {['gcash', 'maya'].includes(paymentMethod) && (
+                <Alert variant="info" className="mt-3">
+                  <FaQrcode className="me-2" />
+                  <strong>Digital Payment:</strong> After placing your order, a QR code will be displayed for payment.
+                  Please scan the code with your {paymentMethod === 'gcash' ? 'GCash' : 'Maya'} app to complete the payment.
+                </Alert>
+              )}
             </Card.Body>
           </Card>
 
@@ -463,6 +527,69 @@ const CheckoutPage = () => {
             </div>
           </Form>
         </Modal.Body>
+      </Modal>
+
+      {/* Payment QR Code Modal */}
+      <Modal show={showPaymentQR} onHide={() => setShowPaymentQR(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaQrcode className="me-2" />
+            Complete Your Payment
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center">
+          <Alert variant="success" className="mb-4">
+            <h5>Order Placed Successfully!</h5>
+            <p className="mb-0">Please scan the QR code below to complete your payment.</p>
+          </Alert>
+
+          <div className="mb-4">
+            <h6>Payment Amount: ₱{total.toFixed(2)}</h6>
+            <p className="text-muted">Payment Method: {paymentMethod === 'gcash' ? 'GCash' : 'Maya'}</p>
+          </div>
+
+          {/* QR Code Placeholder - In a real implementation, this would be generated by the backend */}
+          <div className="border rounded p-4 mb-4" style={{ backgroundColor: '#f8f9fa' }}>
+            <div className="d-flex align-items-center justify-content-center" style={{ height: '300px' }}>
+              <div>
+                <FaQrcode size={150} className="text-secondary mb-3" />
+                <p className="text-muted">QR Code would be generated here</p>
+                <small className="text-muted">
+                  In production, this would display the actual QR code for {paymentMethod === 'gcash' ? 'GCash' : 'Maya'} payment
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <Alert variant="info">
+            <strong>Instructions:</strong>
+            <ol className="mb-0 mt-2 text-start">
+              <li>Open your {paymentMethod === 'gcash' ? 'GCash' : 'Maya'} app</li>
+              <li>Scan the QR code above</li>
+              <li>Confirm the payment amount</li>
+              <li>Complete the transaction</li>
+              <li>Return to this page and click "Payment Completed"</li>
+            </ol>
+          </Alert>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowPaymentQR(false)}>
+            Cancel Order
+          </Button>
+          <Button
+            variant="success"
+            onClick={async () => {
+              // In a real implementation, you'd verify payment status with the backend
+              await clearCart();
+              setShowPaymentQR(false);
+              navigate('/orders', {
+                state: { paymentCompleted: true }
+              });
+            }}
+          >
+            Payment Completed
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );

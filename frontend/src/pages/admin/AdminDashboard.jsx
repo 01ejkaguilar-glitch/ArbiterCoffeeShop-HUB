@@ -1,47 +1,55 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Table, Badge } from 'react-bootstrap';
-import { FaShoppingBag, FaUsers, FaChartLine, FaBoxes } from 'react-icons/fa';
+import { Container, Row, Col, Card, Table, Badge, Alert } from 'react-bootstrap';
+import { FaShoppingBag, FaUsers, FaChartLine, FaBoxes, FaWifi, FaExclamationTriangle, FaBell } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
+import { useAutoRefresh, AutoRefreshControls } from '../../hooks/useAutoRefresh';
+import { useBaristaOrders, useInventoryAlerts } from '../../hooks/useBroadcast';
+import { useNotificationSystem } from '../../components/common/NotificationSystem';
 import Loading from '../../components/common/Loading';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({
+  const { showSuccessNotification, showLowStockAlert } = useNotificationSystem();
+
+  // Real-time order notifications
+  const { isConnected: ordersConnected, pendingOrders } = useBaristaOrders((newOrder) => {
+    showSuccessNotification(
+      'New Order Alert',
+      `Order #${newOrder.order_number} requires attention.`
+    );
+  });
+
+  // Real-time inventory alerts
+  useInventoryAlerts((item) => {
+    showLowStockAlert(item);
+  });
+
+  // Auto-refresh dashboard data
+  const {
+    data: dashboardData,
+    loading,
+    error,
+    lastRefresh,
+    isAutoRefreshEnabled,
+    refresh,
+    toggleAutoRefresh
+  } = useAutoRefresh(async () => {
+    const response = await apiService.get(API_ENDPOINTS.ADMIN.DASHBOARD_STATS);
+    if (response.success) {
+      return response.data;
+    }
+    throw new Error('Failed to fetch dashboard data');
+  }, 60000); // Refresh every minute
+
+  const stats = dashboardData?.stats || {
     totalOrders: 0,
     totalUsers: 0,
     totalProducts: 0,
     totalRevenue: 0
-  });
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const response = await apiService.get(API_ENDPOINTS.ADMIN.DASHBOARD_STATS);
-
-      if (response.success) {
-        const { stats: dashboardStats, recentOrders: orders } = response.data;
-        
-        setStats({
-          totalOrders: dashboardStats.totalOrders || 0,
-          totalUsers: dashboardStats.totalUsers || 0,
-          totalProducts: dashboardStats.totalProducts || 0,
-          totalRevenue: dashboardStats.totalRevenue || 0
-        });
-
-        setRecentOrders(orders || []);
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
   };
+
+  const recentOrders = dashboardData?.recentOrders || [];
 
   const getStatusBadge = (status) => {
     const statusColors = {
@@ -63,10 +71,55 @@ const AdminDashboard = () => {
     <Container className="py-5">
       <Row className="mb-4">
         <Col>
-          <h1 className="display-5 fw-bold">Admin Dashboard</h1>
-          <p className="lead text-muted">Manage your coffee shop</p>
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 className="display-5 fw-bold">Admin Dashboard</h1>
+              <p className="lead text-muted">Manage your coffee shop</p>
+            </div>
+            <div className="d-flex align-items-center gap-3">
+              {/* Real-time connection status */}
+              <div className="d-flex align-items-center">
+                {ordersConnected ? (
+                  <FaWifi className="text-success me-2" />
+                ) : (
+                  <FaExclamationTriangle className="text-warning me-2" />
+                )}
+                <small className={ordersConnected ? 'text-success' : 'text-warning'}>
+                  {ordersConnected ? 'Live' : 'Offline'}
+                </small>
+              </div>
+
+              {/* Pending orders indicator */}
+              {pendingOrders.length > 0 && (
+                <div className="d-flex align-items-center">
+                  <FaBell className="text-warning me-2" />
+                  <Badge bg="warning">{pendingOrders.length} new orders</Badge>
+                </div>
+              )}
+
+              {/* Auto-refresh controls */}
+              <AutoRefreshControls
+                loading={loading}
+                lastRefresh={lastRefresh}
+                isAutoRefreshEnabled={isAutoRefreshEnabled}
+                onRefresh={refresh}
+                onToggleAutoRefresh={toggleAutoRefresh}
+              />
+            </div>
+          </div>
         </Col>
       </Row>
+
+      {/* Error message */}
+      {error && (
+        <Row className="mb-3">
+          <Col>
+            <Alert variant="danger">
+              {error}
+            </Alert>
+          </Col>
+        </Row>
+      )}
 
       <Row className="g-4 mb-5">
         <Col md={6} lg={3}>

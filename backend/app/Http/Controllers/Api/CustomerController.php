@@ -4,8 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Models\ProductFavorite;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class CustomerController extends BaseController
 {
@@ -85,6 +90,7 @@ class CustomerController extends BaseController
                 'birthday' => $profile->birthday ?? null,
                 'address' => $profile->address ?? null,
                 'taste_preferences' => $profile->taste_preferences ?? null,
+                'profile_picture' => $profile->profile_picture ?? null,
                 'created_at' => $user->created_at,
             ];
 
@@ -103,33 +109,41 @@ class CustomerController extends BaseController
     public function updateProfile(Request $request)
     {
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'name' => 'sometimes|string|max:255',
-                'phone' => 'sometimes|string|max:20',
-                'birthday' => 'sometimes|date',
-                'address' => 'sometimes|string|max:500',
-                'taste_preferences' => 'sometimes|array',
+                'phone' => 'sometimes|nullable|string|max:20',
+                'birthday' => 'sometimes|nullable|date',
+                'address' => 'sometimes|nullable|string|max:500',
+                'taste_preferences' => 'sometimes|nullable|array',
             ]);
 
             $user = Auth::user();
 
             // Update user name if provided
             if ($request->has('name')) {
-                $user->name = $request->input('name');
+                $user->name = $validated['name'];
                 $user->save();
             }
 
-            // Update or create customer profile
-            $profileData = $request->only(['phone', 'birthday', 'address', 'taste_preferences']);
-            $user->customerProfile()->updateOrCreate(
-                ['user_id' => $user->id],
-                $profileData
-            );
+            // Prepare profile data
+            $profileData = [];
+            if (isset($validated['phone'])) $profileData['phone'] = $validated['phone'];
+            if (isset($validated['birthday'])) $profileData['birthday'] = $validated['birthday'];
+            if (isset($validated['address'])) $profileData['address'] = $validated['address'];
+            if (isset($validated['taste_preferences'])) $profileData['taste_preferences'] = $validated['taste_preferences'];
+
+            // Update or create customer profile only if there's data to update
+            if (!empty($profileData)) {
+                $user->customerProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $profileData
+                );
+            }
 
             $user->refresh();
             $profile = $user->customerProfile;
 
-            $profileData = [
+            $responseData = [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
@@ -137,9 +151,10 @@ class CustomerController extends BaseController
                 'birthday' => $profile->birthday ?? null,
                 'address' => $profile->address ?? null,
                 'taste_preferences' => $profile->taste_preferences ?? null,
+                'profile_picture' => $profile->profile_picture ?? null,
             ];
 
-            return $this->sendResponse($profileData, 'Profile updated successfully');
+            return $this->sendResponse($responseData, 'Profile updated successfully');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->sendValidationError($e->errors());
         } catch (\Exception $e) {
@@ -200,6 +215,309 @@ class CustomerController extends BaseController
             return $this->sendValidationError($e->errors());
         } catch (\Exception $e) {
             return $this->sendError('Failed to update taste preferences', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get customer order analytics
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getOrderAnalytics()
+    {
+        try {
+            $user = Auth::user();
+
+            // Get order statistics
+            $totalOrders = Order::where('user_id', $user->id)->count();
+            $totalSpent = Order::where('user_id', $user->id)
+                ->where('payment_status', 'paid')
+                ->sum('total_amount');
+            $averageOrderValue = $totalOrders > 0 ? $totalSpent / $totalOrders : 0;
+
+            // Get favorite items (most ordered products)
+            $favoriteItems = DB::table('order_items')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->where('orders.user_id', $user->id)
+                ->select(
+                    'products.id',
+                    'products.name',
+                    'products.image_url',
+                    DB::raw('SUM(order_items.quantity) as total_quantity'),
+                    DB::raw('COUNT(DISTINCT orders.id) as order_count')
+                )
+                ->groupBy('products.id', 'products.name', 'products.image_url')
+                ->orderBy('total_quantity', 'desc')
+                ->limit(5)
+                ->get();
+
+            // Get most ordered category
+            $mostOrderedCategory = DB::table('order_items')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->join('categories', 'products.category_id', '=', 'categories.id')
+                ->where('orders.user_id', $user->id)
+                ->select(
+                    'categories.id',
+                    'categories.name',
+                    DB::raw('COUNT(order_items.id) as item_count')
+                )
+                ->groupBy('categories.id', 'categories.name')
+                ->orderBy('item_count', 'desc')
+                ->first();
+
+            // Get monthly order frequency
+            $orderFrequency = DB::table('orders')
+                ->where('user_id', $user->id)
+                ->select(
+                    DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                    DB::raw('COUNT(*) as order_count')
+                )
+                ->groupBy('month')
+                ->orderBy('month', 'desc')
+                ->limit(12)
+                ->get();
+
+            return $this->sendResponse([
+                'total_orders' => $totalOrders,
+                'total_spent' => number_format($totalSpent, 2),
+                'average_order_value' => number_format($averageOrderValue, 2),
+                'favorite_items' => $favoriteItems,
+                'most_ordered_category' => $mostOrderedCategory,
+                'order_frequency' => $orderFrequency,
+            ], 'Order analytics retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to retrieve analytics', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Upload profile picture
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadProfilePicture(Request $request)
+    {
+        try {
+            $request->validate([
+                'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+
+            $user = Auth::user();
+
+            // Handle image upload
+            if ($request->hasFile('profile_picture')) {
+                $image = $request->file('profile_picture');
+                $imageName = 'profile_' . $user->id . '_' . time() . '.' . $image->getClientOriginalExtension();
+                $imagePath = $image->storeAs('profiles', $imageName, 'public');
+                
+                $profilePictureUrl = '/storage/' . $imagePath;
+
+                // Update profile picture
+                $user->customerProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    ['profile_picture' => $profilePictureUrl]
+                );
+
+                return $this->sendResponse([
+                    'profile_picture' => $profilePictureUrl
+                ], 'Profile picture uploaded successfully');
+            }
+
+            return $this->sendError('No file uploaded', 400);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->sendValidationError($e->errors());
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to upload profile picture', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Update notification preferences
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateNotificationPreferences(Request $request)
+    {
+        try {
+            $request->validate([
+                'email_notifications' => 'boolean',
+                'sms_notifications' => 'boolean',
+                'order_updates' => 'boolean',
+                'promotional_offers' => 'boolean',
+            ]);
+
+            $user = Auth::user();
+
+            $preferences = $request->only([
+                'email_notifications',
+                'sms_notifications',
+                'order_updates',
+                'promotional_offers'
+            ]);
+
+            // Get current taste preferences
+            $profile = $user->customerProfile;
+            $tastePreferences = $profile ? ($profile->taste_preferences ?? []) : [];
+
+            // Merge notification preferences with taste preferences
+            $tastePreferences['notification_preferences'] = $preferences;
+
+            $user->customerProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['taste_preferences' => $tastePreferences]
+            );
+
+            return $this->sendResponse($preferences, 'Notification preferences updated successfully');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->sendValidationError($e->errors());
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to update notification preferences', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get user's favorite products
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getFavorites()
+    {
+        try {
+            $user = Auth::user();
+
+            $favorites = ProductFavorite::where('user_id', $user->id)
+                ->with('product.category')
+                ->latest()
+                ->get()
+                ->map(function ($favorite) {
+                    return [
+                        'id' => $favorite->id,
+                        'product' => $favorite->product,
+                        'added_at' => $favorite->created_at,
+                    ];
+                });
+
+            return $this->sendResponse($favorites, 'Favorites retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to retrieve favorites', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Add product to favorites
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function addFavorite(Request $request)
+    {
+        try {
+            $request->validate([
+                'product_id' => 'required|exists:products,id',
+            ]);
+
+            $user = Auth::user();
+            $productId = $request->input('product_id');
+
+            // Check if already favorited
+            $existing = ProductFavorite::where('user_id', $user->id)
+                ->where('product_id', $productId)
+                ->first();
+
+            if ($existing) {
+                return $this->sendError('Product already in favorites', 400);
+            }
+
+            // Add to favorites
+            $favorite = ProductFavorite::create([
+                'user_id' => $user->id,
+                'product_id' => $productId,
+            ]);
+
+            $favorite->load('product.category');
+
+            return $this->sendResponse($favorite, 'Product added to favorites', 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->sendValidationError($e->errors());
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to add favorite', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Remove product from favorites
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function removeFavorite($id)
+    {
+        try {
+            $user = Auth::user();
+
+            $favorite = ProductFavorite::where('user_id', $user->id)
+                ->where('id', $id)
+                ->first();
+
+            if (!$favorite) {
+                return $this->sendError('Favorite not found', 404);
+            }
+
+            $favorite->delete();
+
+            return $this->sendResponse(null, 'Product removed from favorites');
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to remove favorite', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Deactivate customer account
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deactivateAccount(Request $request)
+    {
+        try {
+            $request->validate([
+                'reason' => 'sometimes|string|max:500',
+                'password' => 'required|string',
+            ]);
+
+            $user = Auth::user();
+
+            // Verify password
+            if (!Hash::check($request->input('password'), $user->password)) {
+                return $this->sendError('Invalid password', 400);
+            }
+
+            // Soft delete the user account
+            $user->update([
+                'email' => 'deactivated_' . time() . '_' . $user->email,
+                'deleted_at' => now(),
+            ]);
+
+            // Log the deactivation reason if provided
+            if ($request->has('reason')) {
+                Log::info('Account deactivated', [
+                    'user_id' => $user->id,
+                    'reason' => $request->input('reason'),
+                ]);
+            }
+
+            // Logout the user
+            Auth::logout();
+
+            return $this->sendResponse(null, 'Account deactivated successfully');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->sendValidationError($e->errors());
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to deactivate account', 500, ['error' => $e->getMessage()]);
         }
     }
 }
