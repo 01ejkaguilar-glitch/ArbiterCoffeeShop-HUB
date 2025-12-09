@@ -121,6 +121,12 @@ const AdminProducts = () => {
         Object.keys(formData).forEach(key => {
           if (key === 'image' && formData[key]) {
             formDataToSend.append(key, formData[key]);
+          } else if (key === 'price') {
+            formDataToSend.append(key, parseFloat(formData[key]) || 0);
+          } else if (key === 'stock_quantity') {
+            formDataToSend.append(key, parseInt(formData[key]) || 0);
+          } else if (key === 'category_id') {
+            formDataToSend.append(key, parseInt(formData[key]) || '');
           } else if (key !== 'image') {
             formDataToSend.append(key, formData[key]);
           }
@@ -136,7 +142,12 @@ const AdminProducts = () => {
         }
       } else {
         // Use regular JSON for non-file uploads
-        const dataToSend = { ...formData };
+        const dataToSend = { 
+          ...formData,
+          price: parseFloat(formData.price) || 0,
+          stock_quantity: parseInt(formData.stock_quantity) || 0,
+          category_id: parseInt(formData.category_id) || null
+        };
         delete dataToSend.image; // Remove image field if no file
 
         if (editingProduct) {
@@ -160,11 +171,23 @@ const AdminProducts = () => {
         setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
       }
     } catch (error) {
-      setAlert({
-        show: true,
-        message: error.response?.data?.message || 'Failed to save product',
-        type: 'danger'
-      });
+      const errorMessage = error.response?.data?.message || 'Failed to save product';
+      const validationErrors = error.response?.data?.errors;
+      
+      if (validationErrors) {
+        const errorDetails = Object.values(validationErrors).flat().join(', ');
+        setAlert({
+          show: true,
+          message: `${errorMessage}: ${errorDetails}`,
+          type: 'danger'
+        });
+      } else {
+        setAlert({
+          show: true,
+          message: errorMessage,
+          type: 'danger'
+        });
+      }
     }
   };
 
@@ -375,11 +398,12 @@ const AdminProducts = () => {
             </Row>
 
             <Form.Group className="mb-3">
-              <Form.Label>Category</Form.Label>
+              <Form.Label>Category *</Form.Label>
               <Form.Select
                 name="category_id"
                 value={formData.category_id}
                 onChange={handleChange}
+                required
               >
                 <option value="">Select Category</option>
                 {categories.map((category) => (
