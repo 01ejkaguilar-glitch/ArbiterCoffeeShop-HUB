@@ -51,7 +51,16 @@ class ProductController extends BaseController
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        \Log::info('Product store request data:', $request->all());
+
+        // Prepare data for validation
+        $data = $request->all();
+        $data['category_id'] = (int) $data['category_id'];
+        $data['stock_quantity'] = (int) $data['stock_quantity'];
+        $data['price'] = (float) $data['price'];
+        $data['is_available'] = $request->boolean('is_available', true);
+
+        $validator = Validator::make($data, [
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -64,6 +73,7 @@ class ProductController extends BaseController
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Product validation failed:', $validator->errors()->toArray());
             return $this->sendValidationError($validator->errors()->toArray());
         }
 
