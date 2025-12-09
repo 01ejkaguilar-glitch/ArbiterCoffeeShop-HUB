@@ -1,0 +1,25 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - routes
+        - config
+        - database
+
+    level: 5
+
+    ignoreErrors:
+        - '#Unsafe usage of new static#'
+        - '#Undefined variable: \$this#'
+        - '#Expected type .*Authenticatable.* Found .*User#'
+        - '#Internal limitation: function .* utilizes too many types#'
+        - '#Relation .* is not found in App\\Models\\.* model#'
+
+    excludePaths:
+        - vendor
+        - storage
+        - bootstrap/cache
+        - _ide_helper.php
+        - _ide_helper_models.php

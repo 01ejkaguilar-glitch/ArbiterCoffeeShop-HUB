@@ -1,0 +1,106 @@
+
+[2025-11-23 10:41:10] Concurrent Login Test
+{
+    "total_requests": 50,
+    "total_time": 0.136,
+    "avg_time": 0.003,
+    "requests_per_second": 368.66
+}
+
+[2025-11-23 10:41:18] Concurrent Login Test
+{
+    "total_requests": 50,
+    "total_time": 0.118,
+    "avg_time": 0.002,
+    "requests_per_second": 422.14
+}
+
+[2025-11-23 10:41:57] Concurrent Login Test
+{
+    "total_requests": 50,
+    "total_time": 0.123,
+    "avg_time": 0.002,
+    "requests_per_second": 405.09
+}
+
+[2025-11-23 10:41:58] Product Listing Performance
+{
+    "total_products": 1000,
+    "pages_tested": 10,
+    "total_time": 0.113,
+    "avg_time_per_page": 0.011
+}
+
+[2025-11-23 10:41:58] Order Creation Performance
+{
+    "total_orders": 20,
+    "successful_orders": 20,
+    "total_time": 0.343,
+    "avg_time": 0.017,
+    "orders_per_second": 58.29
+}
+
+[2025-11-23 10:41:59] API Response Times
+[
+    {
+        "endpoint": "\/api\/v1\/products",
+        "response_time": "12.45ms"
+    },
+    {
+        "endpoint": "\/api\/v1\/categories",
+        "response_time": "13.36ms"
+    },
+    {
+        "endpoint": "\/api\/v1\/announcements",
+        "response_time": "5.09ms"
+    }
+]
+
+[2025-11-23 10:42:25] Concurrent Login Test
+{
+    "total_requests": 50,
+    "total_time": 0.122,
+    "avg_time": 0.002,
+    "requests_per_second": 410.27
+}
+
+[2025-11-23 10:42:26] Product Listing Performance
+{
+    "total_products": 1000,
+    "pages_tested": 10,
+    "total_time": 0.112,
+    "avg_time_per_page": 0.011
+}
+
+[2025-11-23 10:42:26] Order Creation Performance
+{
+    "total_orders": 20,
+    "successful_orders": 20,
+    "total_time": 0.343,
+    "avg_time": 0.017,
+    "orders_per_second": 58.26
+}
+
+[2025-11-23 10:42:26] Complex Query Performance
+{
+    "query_type": "sales_analytics",
+    "total_users": 50,
+    "total_orders": 30,
+    "query_time": 0.012
+}
+
+[2025-11-23 10:42:27] API Response Times
+[
+    {
+        "endpoint": "\/api\/v1\/products",
+        "response_time": "12.5ms"
+    },
+    {
+        "endpoint": "\/api\/v1\/categories",
+        "response_time": "16.23ms"
+    },
+    {
+        "endpoint": "\/api\/v1\/announcements",
+        "response_time": "3.43ms"
+    }
+]
