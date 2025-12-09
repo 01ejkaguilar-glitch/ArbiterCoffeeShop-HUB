@@ -4,8 +4,10 @@
  */
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 
 export default API_BASE_URL;
+export { BACKEND_BASE_URL };
 
 export const API_ENDPOINTS = {
   // Authentication

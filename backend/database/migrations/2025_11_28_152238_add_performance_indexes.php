@@ -8,12 +8,22 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
-     * Check if index exists (SQLite compatible)
+     * Check if index exists (Database agnostic)
      */
     private function indexExists(string $table, string $indexName): bool
     {
-        $result = DB::select("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name=? AND name=?", [$table, $indexName]);
-        return !empty($result);
+        $connection = config('database.default');
+        
+        if ($connection === 'sqlite') {
+            $result = DB::select("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name=? AND name=?", [$table, $indexName]);
+            return !empty($result);
+        } elseif ($connection === 'mysql') {
+            $result = DB::select("SELECT INDEX_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?", [$table, $indexName]);
+            return !empty($result);
+        }
+        
+        // For other databases, try to create and catch exception
+        return false;
     }
 
     /**

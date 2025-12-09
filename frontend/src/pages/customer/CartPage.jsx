@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Button, Table } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
+import { BACKEND_BASE_URL } from '../../config/api';
 
 const CartPage = () => {
   const { cart, cartCount, updateCartItem, removeFromCart } = useCart();
@@ -70,7 +71,7 @@ const CartPage = () => {
                       <td>
                         <div className="d-flex align-items-center">
                           <img
-                            src={item.product?.image_url || 'https://via.placeholder.com/80'}
+                            src={item.product?.image_url ? `${BACKEND_BASE_URL}${item.product.image_url}` : 'https://via.placeholder.com/80'}
                             alt={item.product?.name}
                             width="80"
                             height="80"

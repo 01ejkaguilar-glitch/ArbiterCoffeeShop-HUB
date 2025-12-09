@@ -10,6 +10,20 @@ use Illuminate\Support\Facades\Validator;
 class ProductController extends BaseController
 {
     /**
+     * Clear the products API cache
+     */
+    private function clearProductsCache()
+    {
+        // Generate the same cache key as the CacheResponse middleware
+        $url = 'http://localhost:8000/api/v1/products';
+        $queryParams = [];
+        ksort($queryParams);
+        $cacheKey = 'api_cache:' . md5($url . serialize($queryParams));
+        
+        \Cache::forget($cacheKey);
+    }
+
+    /**
      * Display a listing of products.
      */
     public function index(Request $request)
@@ -90,6 +104,9 @@ class ProductController extends BaseController
         $product = Product::create($productData);
         $product->load('category');
 
+        // Clear the products cache since we added a new product
+        $this->clearProductsCache();
+
         return $this->sendCreated($product, 'Product created successfully');
     }
 
@@ -152,6 +169,9 @@ class ProductController extends BaseController
         $product->update($productData);
         $product->load('category');
 
+        // Clear the products cache since we updated a product
+        $this->clearProductsCache();
+
         return $this->sendResponse($product, 'Product updated successfully');
     }
 
@@ -167,6 +187,9 @@ class ProductController extends BaseController
         }
 
         $product->delete();
+
+        // Clear the products cache since we deleted a product
+        $this->clearProductsCache();
 
         return $this->sendResponse(null, 'Product deleted successfully');
     }

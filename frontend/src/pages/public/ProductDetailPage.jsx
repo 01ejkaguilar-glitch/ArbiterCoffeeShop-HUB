@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Badge, Form } from 'react-bootstrap';
 import { FaShoppingCart, FaMinus, FaPlus } from 'react-icons/fa';
 import apiService from '../../services/api.service';
-import { API_ENDPOINTS } from '../../config/api';
+import { API_ENDPOINTS, BACKEND_BASE_URL } from '../../config/api';
 import { useCart } from '../../context/CartContext';
 import Loading from '../../components/common/Loading';
 
@@ -68,7 +68,7 @@ const ProductDetailPage = () => {
       <Row>
         <Col md={6}>
           <img
-            src={product.image_url || 'https://via.placeholder.com/500?text=Coffee'}
+            src={product.image_url ? `${BACKEND_BASE_URL}${product.image_url}` : 'https://via.placeholder.com/500?text=Coffee'}
             alt={product.name}
             className="img-fluid rounded shadow-md-green"
           />

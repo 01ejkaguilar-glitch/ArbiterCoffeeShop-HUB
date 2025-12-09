@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Table, Button, Modal, Form, Badge, Alert } f
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
+import { BACKEND_BASE_URL } from '../../config/api';
 import Loading from '../../components/common/Loading';
 
 const AdminProducts = () => {
@@ -127,6 +128,8 @@ const AdminProducts = () => {
             formDataToSend.append(key, parseInt(formData[key]) || 0);
           } else if (key === 'category_id') {
             formDataToSend.append(key, parseInt(formData[key]) || '');
+          } else if (key === 'is_available') {
+            formDataToSend.append(key, formData[key] ? 1 : 0);
           } else if (key !== 'image') {
             formDataToSend.append(key, formData[key]);
           }
@@ -146,7 +149,8 @@ const AdminProducts = () => {
           ...formData,
           price: parseFloat(formData.price) || 0,
           stock_quantity: parseInt(formData.stock_quantity) || 0,
-          category_id: parseInt(formData.category_id) || null
+          category_id: parseInt(formData.category_id) || null,
+          is_available: formData.is_available ? 1 : 0
         };
         delete dataToSend.image; // Remove image field if no file
 
@@ -265,7 +269,7 @@ const AdminProducts = () => {
                         <td>
                           <div className="d-flex align-items-center">
                             <img
-                              src={product.image_url || 'https://via.placeholder.com/50'}
+                              src={product.image_url ? `${BACKEND_BASE_URL}${product.image_url}` : 'https://via.placeholder.com/50'}
                               alt={product.name}
                               width="50"
                               height="50"
@@ -360,7 +364,7 @@ const AdminProducts = () => {
                   <small className="text-muted">Current image:</small>
                   <br />
                   <img
-                    src={editingProduct.image_url}
+                    src={editingProduct.image_url ? `${BACKEND_BASE_URL}${editingProduct.image_url}` : 'https://via.placeholder.com/50'}
                     alt="Current product"
                     style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
                     className="border rounded"

@@ -3,7 +3,7 @@ import { Container, Row, Col, Card, Button, Form, InputGroup, Tabs, Tab, Badge }
 import { FaSearch, FaPlus, FaCoffee, FaCocktail, FaUtensils, FaBox, FaCookieBite } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import apiService from '../../services/api.service';
-import { API_ENDPOINTS } from '../../config/api';
+import { API_ENDPOINTS, BACKEND_BASE_URL } from '../../config/api';
 import { useCart } from '../../context/CartContext';
 import Loading from '../../components/common/Loading';
 
@@ -177,7 +177,7 @@ const ProductsPage = () => {
                 {getProductBadge(product)}
                 <Card.Img
                   variant="top"
-                  src={product.image_url || 'https://via.placeholder.com/300x250?text=Coffee'}
+                  src={product.image_url ? `${BACKEND_BASE_URL}${product.image_url}` : 'https://via.placeholder.com/300x250?text=Coffee'}
                   className="product-image"
                   style={{ height: '200px', objectFit: 'cover' }}
                 />
