@@ -174,6 +174,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/admin/analytics/sales', [AnalyticsController::class, 'getSalesAnalytics']);
             Route::get('/admin/analytics/customers', [AnalyticsController::class, 'getCustomerAnalytics']);
             Route::get('/admin/analytics/performance', [AnalyticsController::class, 'getPerformanceAnalytics']);
+            
+            // Customer Insights Analytics (Admin can view all customers)
+            Route::post('/admin/analytics/customer-insights/bulk', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'getBulkInsights']);
 
             // Reports
             Route::get('/admin/reports/attendance', [ReportController::class, 'getAttendanceReport']);
@@ -274,6 +277,37 @@ Route::prefix('v1')->group(function () {
             // Route::post('/payments/maya', [PaymentController::class, 'processMaya']); // Temporarily disabled
             Route::post('/payments/cash', [PaymentController::class, 'recordCash']);
             Route::get('/payments/{id}/status', [PaymentController::class, 'checkStatus']);
+            
+            // ==================================================
+            // RECOMMENDATION SYSTEM ROUTES
+            // ==================================================
+            
+            // Product Recommendations (cached for 1 hour per customer)
+            Route::middleware('cache.response:3600')->group(function () {
+                Route::get('/recommendations/products', [\App\Http\Controllers\Api\V1\RecommendationController::class, 'getProductRecommendations']);
+                Route::get('/recommendations/coffee-beans', [\App\Http\Controllers\Api\V1\RecommendationController::class, 'getCoffeeBeanRecommendations']);
+            });
+            
+            Route::get('/recommendations/affinity-score', [\App\Http\Controllers\Api\V1\RecommendationController::class, 'getCustomerAffinityScore']);
+            Route::post('/recommendations/clear-cache', [\App\Http\Controllers\Api\V1\RecommendationController::class, 'clearRecommendationCache']);
+            
+            // ==================================================
+            // CUSTOMER INSIGHTS ROUTES
+            // ==================================================
+            
+            // Comprehensive insights (cached for 1 hour per customer)
+            Route::middleware('cache.response:3600')->group(function () {
+                Route::get('/customer-insights', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'getCustomerInsights']);
+                Route::get('/customer-insights/purchase-behavior', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'getPurchaseBehavior']);
+                Route::get('/customer-insights/product-affinity', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'getProductAffinity']);
+                Route::get('/customer-insights/engagement-score', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'getEngagementScore']);
+                Route::get('/customer-insights/lifecycle-stage', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'getLifecycleStage']);
+                Route::get('/customer-insights/predictions', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'getPredictions']);
+            });
+            
+            Route::get('/customer-insights/recommendations', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'getRecommendations']);
+            Route::get('/customer-insights/satisfaction', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'getSatisfactionIndicators']);
+            Route::post('/customer-insights/clear-cache', [\App\Http\Controllers\Api\V1\CustomerInsightsController::class, 'clearCache']);
 
             // ==================================================
             // BARISTA PORTAL ROUTES
@@ -419,6 +453,13 @@ Route::prefix('v1')->group(function () {
         // PayPal webhook
         Route::post('/paypal', [PaymentWebhookController::class, 'paypalWebhook']);
     });
+
+    // ==================================================
+    // PUBLIC RECOMMENDATIONS (Homepage)
+    // ==================================================
+    
+    // Homepage recommendations (public - shows popular for guests, personalized for authenticated users)
+    Route::get('/recommendations/homepage', [\App\Http\Controllers\Api\V1\RecommendationController::class, 'getHomepageRecommendations']);
 
     // Coffee Bean Management (temporarily public for testing)
     Route::post('/admin/coffee-beans', [CoffeeBeanController::class, 'store']);

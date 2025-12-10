@@ -78,6 +78,28 @@ export const API_ENDPOINTS = {
     DEACTIVATE_ACCOUNT: `${API_BASE_URL}/customer/account`,
   },
 
+  // Recommendations
+  RECOMMENDATIONS: {
+    PRODUCTS: `${API_BASE_URL}/recommendations/products`,
+    COFFEE_BEANS: `${API_BASE_URL}/recommendations/coffee-beans`,
+    HOMEPAGE: `${API_BASE_URL}/recommendations/homepage`,
+    AFFINITY_SCORE: `${API_BASE_URL}/recommendations/affinity-score`,
+    CLEAR_CACHE: `${API_BASE_URL}/recommendations/clear-cache`,
+  },
+
+  // Customer Insights
+  CUSTOMER_INSIGHTS: {
+    INSIGHTS: `${API_BASE_URL}/customer-insights`,
+    PURCHASE_BEHAVIOR: `${API_BASE_URL}/customer-insights/purchase-behavior`,
+    PRODUCT_AFFINITY: `${API_BASE_URL}/customer-insights/product-affinity`,
+    ENGAGEMENT_SCORE: `${API_BASE_URL}/customer-insights/engagement-score`,
+    LIFECYCLE_STAGE: `${API_BASE_URL}/customer-insights/lifecycle-stage`,
+    PREDICTIONS: `${API_BASE_URL}/customer-insights/predictions`,
+    RECOMMENDATIONS: `${API_BASE_URL}/customer-insights/recommendations`,
+    SATISFACTION: `${API_BASE_URL}/customer-insights/satisfaction`,
+    CLEAR_CACHE: `${API_BASE_URL}/customer-insights/clear-cache`,
+  },
+
   // Payments
   PAYMENTS: {
     GCASH: `${API_BASE_URL}/payments/gcash`,

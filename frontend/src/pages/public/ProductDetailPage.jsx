@@ -6,6 +6,7 @@ import apiService from '../../services/api.service';
 import { API_ENDPOINTS, BACKEND_BASE_URL } from '../../config/api';
 import { useCart } from '../../context/CartContext';
 import Loading from '../../components/common/Loading';
+import ProductRecommendations from '../../components/public/ProductRecommendations';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -136,6 +137,9 @@ const ProductDetailPage = () => {
           )}
         </Col>
       </Row>
+
+      {/* Product Recommendations */}
+      <ProductRecommendations currentProductId={product.id} />
     </Container>
   );
 };

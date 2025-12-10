@@ -28,6 +28,7 @@ import OrderHistory from './pages/customer/OrderHistory';
 import OrderDetailPage from './pages/customer/OrderDetailPage';
 import CartPage from './pages/customer/CartPage';
 import CheckoutPage from './pages/customer/CheckoutPage';
+import CustomerInsightsPage from './pages/customer/CustomerInsightsPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -85,6 +86,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <CustomerDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/insights"
+                  element={
+                    <ProtectedRoute>
+                      <CustomerInsightsPage />
                     </ProtectedRoute>
                   }
                 />

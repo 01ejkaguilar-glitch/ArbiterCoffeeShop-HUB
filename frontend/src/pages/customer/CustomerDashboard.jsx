@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
+import { CustomerInsightsCard } from '../../components/customer';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
@@ -126,6 +127,14 @@ const CustomerDashboard = () => {
         </Col>
       </Row>
 
+      {/* Customer Insights */}
+      <Row className="mb-5">
+        <Col>
+          <h3 className="fw-bold mb-4">Your Insights</h3>
+          <CustomerInsightsCard />
+        </Col>
+      </Row>
+
       {/* Quick Actions */}
       <Row className="g-4 mb-5">
         <Col md={6} lg={3}>
@@ -171,6 +180,18 @@ const CustomerDashboard = () => {
               <Card.Title>Browse Products</Card.Title>
               <Card.Text className="text-muted">
                 Discover new coffee
+              </Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col md={6} lg={3}>
+          <Card as={Link} to="/insights" className="text-decoration-none h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <FaStar size={48} className="text-warning mb-3" />
+              <Card.Title>Your Insights</Card.Title>
+              <Card.Text className="text-muted">
+                View detailed analytics
               </Card.Text>
             </Card.Body>
           </Card>
@@ -246,6 +267,9 @@ const CustomerDashboard = () => {
                 </Link>
                 <Link to="/orders" className="btn btn-outline-secondary">
                   Track Order
+                </Link>
+                <Link to="/insights" className="btn btn-outline-info">
+                  View Insights
                 </Link>
                 <Link to="/profile" className="btn btn-outline-info">
                   Edit Profile

@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Connection;
+use App\Services\RecommendationService;
+use App\Services\CustomerInsightsService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -12,7 +14,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register Recommendation Service
+        $this->app->singleton(RecommendationService::class, function ($app) {
+            return new RecommendationService();
+        });
+
+        // Register Customer Insights Service
+        $this->app->singleton(CustomerInsightsService::class, function ($app) {
+            return new CustomerInsightsService();
+        });
     }
 
     /**

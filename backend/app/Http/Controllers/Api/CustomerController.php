@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Order;
 use App\Models\User;
-use App\Models\ProductFavorite;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -389,19 +388,45 @@ class CustomerController extends BaseController
         try {
             $user = Auth::user();
 
-            $favorites = ProductFavorite::where('user_id', $user->id)
-                ->with('product.category')
-                ->latest()
-                ->get()
-                ->map(function ($favorite) {
-                    return [
-                        'id' => $favorite->id,
-                        'product' => $favorite->product,
-                        'added_at' => $favorite->created_at,
-                    ];
-                });
+            // Get favorite products with full product details
+            $favorites = DB::table('customer_favorites')
+                ->join('products', 'customer_favorites.product_id', '=', 'products.id')
+                ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+                ->where('customer_favorites.user_id', $user->id)
+                ->where('products.is_available', true)
+                ->select(
+                    'customer_favorites.id as favorite_id',
+                    'products.id',
+                    'products.name',
+                    'products.description',
+                    'products.price',
+                    'products.image_url',
+                    'products.category_id',
+                    'categories.name as category_name',
+                    'customer_favorites.created_at as favorited_at'
+                )
+                ->orderBy('customer_favorites.created_at', 'desc')
+                ->get();
 
-            return $this->sendResponse($favorites, 'Favorites retrieved successfully');
+            // Format favorites to match frontend expectations
+            $formattedFavorites = $favorites->map(function ($favorite) {
+                return [
+                    'id' => $favorite->favorite_id,
+                    'product' => [
+                        'id' => $favorite->id,
+                        'name' => $favorite->name,
+                        'description' => $favorite->description,
+                        'price' => $favorite->price,
+                        'image_url' => $favorite->image_url,
+                        'category_id' => $favorite->category_id,
+                        'category_name' => $favorite->category_name,
+                    ],
+                    'added_at' => $favorite->favorited_at,
+                ];
+            });
+
+            return $this->sendResponse($formattedFavorites, 'Favorites retrieved successfully');
+
         } catch (\Exception $e) {
             return $this->sendError('Failed to retrieve favorites', 500, ['error' => $e->getMessage()]);
         }
@@ -417,30 +442,44 @@ class CustomerController extends BaseController
     {
         try {
             $request->validate([
-                'product_id' => 'required|exists:products,id',
+                'product_id' => 'required|integer|exists:products,id'
             ]);
 
             $user = Auth::user();
-            $productId = $request->input('product_id');
+            $productId = $request->product_id;
 
-            // Check if already favorited
-            $existing = ProductFavorite::where('user_id', $user->id)
-                ->where('product_id', $productId)
+            // Check if product exists and is available
+            $product = Product::where('id', $productId)
+                ->where('is_available', true)
                 ->first();
 
-            if ($existing) {
-                return $this->sendError('Product already in favorites', 400);
+            if (!$product) {
+                return $this->sendError('Product not found or unavailable', 404);
+            }
+
+            // Check if already favorited
+            $exists = DB::table('customer_favorites')
+                ->where('user_id', $user->id)
+                ->where('product_id', $productId)
+                ->exists();
+
+            if ($exists) {
+                return $this->sendError('Product already in favorites', 409);
             }
 
             // Add to favorites
-            $favorite = ProductFavorite::create([
+            DB::table('customer_favorites')->insert([
                 'user_id' => $user->id,
                 'product_id' => $productId,
+                'created_at' => now(),
+                'updated_at' => now()
             ]);
 
-            $favorite->load('product.category');
+            return $this->sendResponse([
+                'product_id' => $productId,
+                'is_favorited' => true
+            ], 'Product added to favorites');
 
-            return $this->sendResponse($favorite, 'Product added to favorites', 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->sendValidationError($e->errors());
         } catch (\Exception $e) {
@@ -459,17 +498,20 @@ class CustomerController extends BaseController
         try {
             $user = Auth::user();
 
-            $favorite = ProductFavorite::where('user_id', $user->id)
-                ->where('id', $id)
-                ->first();
+            $deleted = DB::table('customer_favorites')
+                ->where('user_id', $user->id)
+                ->where('product_id', $id)
+                ->delete();
 
-            if (!$favorite) {
+            if ($deleted === 0) {
                 return $this->sendError('Favorite not found', 404);
             }
 
-            $favorite->delete();
+            return $this->sendResponse([
+                'product_id' => (int) $id,
+                'is_favorited' => false
+            ], 'Product removed from favorites');
 
-            return $this->sendResponse(null, 'Product removed from favorites');
         } catch (\Exception $e) {
             return $this->sendError('Failed to remove favorite', 500, ['error' => $e->getMessage()]);
         }
@@ -518,6 +560,91 @@ class CustomerController extends BaseController
             return $this->sendValidationError($e->errors());
         } catch (\Exception $e) {
             return $this->sendError('Failed to deactivate account', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    public function toggleFavorite(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            $request->validate([
+                'product_id' => 'required|integer|exists:products,id'
+            ]);
+
+            $productId = $request->product_id;
+
+            // Check if product exists and is available
+            $product = Product::where('id', $productId)
+                ->where('is_available', true)
+                ->first();
+
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found or unavailable'
+                ], 404);
+            }
+
+            // Check if already favorited
+            $exists = DB::table('customer_favorites')
+                ->where('user_id', $user->id)
+                ->where('product_id', $productId)
+                ->exists();
+
+            if ($exists) {
+                // Remove from favorites
+                DB::table('customer_favorites')
+                    ->where('user_id', $user->id)
+                    ->where('product_id', $productId)
+                    ->delete();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product removed from favorites',
+                    'data' => [
+                        'product_id' => $productId,
+                        'is_favorited' => false
+                    ]
+                ]);
+            } else {
+                // Add to favorites
+                DB::table('customer_favorites')->insert([
+                    'user_id' => $user->id,
+                    'product_id' => $productId,
+                    'created_at' => \Carbon\Carbon::now(),
+                    'updated_at' => \Carbon\Carbon::now()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Product added to favorites',
+                    'data' => [
+                        'product_id' => $productId,
+                        'is_favorited' => true
+                    ]
+                ]);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to toggle favorite',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

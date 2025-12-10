@@ -1,37 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Container, Row, Col, Button, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FaCoffee, FaLeaf, FaTruck, FaAward } from 'react-icons/fa';
-import apiService from '../../services/api.service';
-import { API_ENDPOINTS } from '../../config/api';
+import HomepageRecommendations from '../../components/public/HomepageRecommendations';
 
 const HomePage = () => {
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchFeaturedProducts();
-  }, []);
-
-  const fetchFeaturedProducts = async () => {
-    try {
-      const response = await apiService.get(API_ENDPOINTS.PRODUCTS.LIST, { limit: 3 });
-      if (response.success && response.data) {
-        // Handle paginated response - extract the data array
-        const productsData = response.data.data || response.data;
-        const productsArray = Array.isArray(productsData) ? productsData : [];
-        setFeaturedProducts(productsArray.slice(0, 3));
-      } else {
-        setFeaturedProducts([]);
-      }
-    } catch (error) {
-      console.error('Error fetching featured products:', error);
-      setFeaturedProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div>
       {/* Hero Section */}
@@ -117,49 +90,10 @@ const HomePage = () => {
         </Container>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Products / Recommendations */}
       <section className="py-5">
         <Container>
-          <div className="text-center mb-5">
-            <h2 className="display-5 fw-bold">Featured Products</h2>
-            <p className="lead text-muted">Discover our most popular coffee selections</p>
-          </div>
-          <Row className="g-4">
-            {!loading && featuredProducts.length > 0 ? (
-              featuredProducts.map((product) => (
-                <Col key={product.id} md={4}>
-                  <Card className="product-card h-100">
-                    <Card.Img 
-                      variant="top" 
-                      src={product.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDMwMCAyNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjUwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjE1MCIgeT0iMTI1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiPkNvZmZlZTwvdGV4dD4KPHN2Zz4='} 
-                      className="product-image"
-                    />
-                    <Card.Body>
-                      <Card.Title>{product.name}</Card.Title>
-                      <Card.Text className="text-muted">
-                        {product.description?.substring(0, 100)}...
-                      </Card.Text>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="product-price">₱{product.price}</span>
-                        <Button as={Link} to={`/products/${product.id}`} variant="primary">
-                          View Details
-                        </Button>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))
-            ) : (
-              <Col className="text-center">
-                <p className="text-muted">Loading featured products...</p>
-              </Col>
-            )}
-          </Row>
-          <div className="text-center mt-5">
-            <Button as={Link} to="/products" variant="outline-primary" size="lg">
-              View All Products
-            </Button>
-          </div>
+          <HomepageRecommendations />
         </Container>
       </section>
 
