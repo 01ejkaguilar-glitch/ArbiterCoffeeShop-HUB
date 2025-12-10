@@ -121,6 +121,28 @@ export const API_ENDPOINTS = {
       PERFORMANCE: `${API_BASE_URL}/admin/analytics/performance`,
       INVENTORY: `${API_BASE_URL}/admin/analytics/inventory`,
     },
+    INVENTORY: {
+      LIST: `${API_BASE_URL}/admin/inventory`,
+      LOW_STOCK: `${API_BASE_URL}/admin/inventory/low-stock`,
+      CREATE: `${API_BASE_URL}/admin/inventory`,
+      UPDATE: (id) => `${API_BASE_URL}/admin/inventory/${id}`,
+      DELETE: (id) => `${API_BASE_URL}/admin/inventory/${id}`,
+      ADJUST: (id) => `${API_BASE_URL}/admin/inventory/${id}/adjust`,
+      LOGS: `${API_BASE_URL}/admin/inventory/logs`,
+    },
+    REPORTS: {
+      ATTENDANCE: `${API_BASE_URL}/admin/reports/attendance`,
+      LEAVE_OT: `${API_BASE_URL}/admin/reports/leave-ot`,
+      TASK_COMPLETION: `${API_BASE_URL}/admin/reports/task-completion`,
+      BEAN_USAGE: `${API_BASE_URL}/admin/reports/bean-usage`,
+      EXPORT: `${API_BASE_URL}/admin/reports/export`,
+    },
+    COFFEE_BEANS: {
+      LIST: `${API_BASE_URL}/coffee-beans`,
+      CREATE: `${API_BASE_URL}/admin/coffee-beans`,
+      UPDATE: (id) => `${API_BASE_URL}/admin/coffee-beans/${id}`,
+      DELETE: (id) => `${API_BASE_URL}/admin/coffee-beans/${id}`,
+    },
   },
 
   // Workforce

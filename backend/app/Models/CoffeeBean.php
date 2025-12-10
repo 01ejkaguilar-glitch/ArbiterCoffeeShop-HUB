@@ -75,4 +75,12 @@ class CoffeeBean extends Model
     {
         return $query->where('is_featured', true);
     }
+
+    /**
+     * Get the daily featured origins for this bean.
+     */
+    public function dailyFeaturedOrigins()
+    {
+        return $this->hasMany(DailyFeaturedOrigin::class, 'coffee_bean_id');
+    }
 }

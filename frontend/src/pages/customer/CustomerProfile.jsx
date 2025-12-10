@@ -20,12 +20,9 @@ const CustomerProfile = () => {
   });
   const [tastePreferences, setTastePreferences] = useState({
     coffee_intensity: '',
-    sweetness_preference: '',
-    milk_type: '',
     favorite_roast: '',
     brewing_methods: [],
-    allergens: [],
-    dietary_restrictions: [],
+    taste_notes: '',
   });
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [deactivateForm, setDeactivateForm] = useState({ password: '', reason: '' });
@@ -70,12 +67,9 @@ const CustomerProfile = () => {
       // For now, we'll use default values since the backend might not have this implemented yet
       setTastePreferences({
         coffee_intensity: 'medium',
-        sweetness_preference: 'moderate',
-        milk_type: 'whole',
         favorite_roast: 'medium',
         brewing_methods: ['drip', 'espresso'],
-        allergens: [],
-        dietary_restrictions: [],
+        taste_notes: '',
       });
     } catch (err) {
       console.error('Failed to load taste preferences:', err);
@@ -334,12 +328,9 @@ const CustomerProfile = () => {
                     const formData = new FormData(e.target);
                     const preferences = {
                       coffee_intensity: formData.get('coffee_intensity'),
-                      sweetness_preference: formData.get('sweetness_preference'),
-                      milk_type: formData.get('milk_type'),
                       favorite_roast: formData.get('favorite_roast'),
                       brewing_methods: formData.getAll('brewing_methods'),
-                      allergens: formData.getAll('allergens'),
-                      dietary_restrictions: formData.getAll('dietary_restrictions'),
+                      taste_notes: formData.get('taste_notes'),
                     };
                     handleTastePreferencesUpdate(preferences);
                   }}>
@@ -353,37 +344,6 @@ const CustomerProfile = () => {
                             <option value="medium">Medium</option>
                             <option value="strong">Strong</option>
                             <option value="extra_strong">Extra Strong</option>
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Sweetness Preference</Form.Label>
-                          <Form.Select name="sweetness_preference" defaultValue={tastePreferences.sweetness_preference}>
-                            <option value="">Select sweetness</option>
-                            <option value="no_sugar">No Sugar</option>
-                            <option value="light">Light</option>
-                            <option value="moderate">Moderate</option>
-                            <option value="sweet">Sweet</option>
-                            <option value="very_sweet">Very Sweet</option>
-                          </Form.Select>
-                        </Form.Group>
-                      </Col>
-                    </Row>
-
-                    <Row>
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label>Milk Type</Form.Label>
-                          <Form.Select name="milk_type" defaultValue={tastePreferences.milk_type}>
-                            <option value="">Select milk type</option>
-                            <option value="whole">Whole Milk</option>
-                            <option value="skim">Skim Milk</option>
-                            <option value="almond">Almond Milk</option>
-                            <option value="oat">Oat Milk</option>
-                            <option value="soy">Soy Milk</option>
-                            <option value="coconut">Coconut Milk</option>
-                            <option value="no_milk">No Milk</option>
                           </Form.Select>
                         </Form.Group>
                       </Col>
@@ -419,35 +379,17 @@ const CustomerProfile = () => {
                     </Form.Group>
 
                     <Form.Group className="mb-3">
-                      <Form.Label>Allergens</Form.Label>
-                      <div>
-                        {['nuts', 'dairy', 'soy', 'gluten', 'eggs'].map(allergen => (
-                          <Form.Check
-                            key={allergen}
-                            inline
-                            label={allergen.charAt(0).toUpperCase() + allergen.slice(1)}
-                            name="allergens"
-                            value={allergen}
-                            defaultChecked={tastePreferences.allergens?.includes(allergen)}
-                          />
-                        ))}
-                      </div>
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                      <Form.Label>Dietary Restrictions</Form.Label>
-                      <div>
-                        {['vegetarian', 'vegan', 'halal', 'kosher', 'low_carb', 'keto'].map(restriction => (
-                          <Form.Check
-                            key={restriction}
-                            inline
-                            label={restriction.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            name="dietary_restrictions"
-                            value={restriction}
-                            defaultChecked={tastePreferences.dietary_restrictions?.includes(restriction)}
-                          />
-                        ))}
-                      </div>
+                      <Form.Label>Taste Notes Preferences</Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={3}
+                        name="taste_notes"
+                        defaultValue={tastePreferences.taste_notes}
+                        placeholder="Describe your preferred coffee taste notes (e.g., fruity, chocolatey, nutty, floral, bright acidity, etc.)"
+                      />
+                      <Form.Text className="text-muted">
+                        Tell us about the flavors and characteristics you enjoy in coffee
+                      </Form.Text>
                     </Form.Group>
 
                     <Button type="submit" variant="success" disabled={saving}>

@@ -76,6 +76,7 @@ class CoffeeBeanController extends BaseController
             'producer' => 'nullable|string|max:255',
             'stock_quantity' => 'required|integer|min:0',
             'is_featured' => 'boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'image_url' => 'nullable|string',
         ]);
 
@@ -83,7 +84,17 @@ class CoffeeBeanController extends BaseController
             return $this->sendValidationError($validator->errors()->toArray());
         }
 
-        $bean = CoffeeBean::create($request->all());
+        $data = $request->except('image');
+        
+        // Handle file upload
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('storage/coffee-beans'), $imageName);
+            $data['image_url'] = '/storage/coffee-beans/' . $imageName;
+        }
+
+        $bean = CoffeeBean::create($data);
 
         return $this->sendCreated($bean, 'Coffee bean created successfully');
     }
@@ -124,6 +135,7 @@ class CoffeeBeanController extends BaseController
             'producer' => 'nullable|string|max:255',
             'stock_quantity' => 'sometimes|integer|min:0',
             'is_featured' => 'boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'image_url' => 'nullable|string',
         ]);
 
@@ -131,7 +143,22 @@ class CoffeeBeanController extends BaseController
             return $this->sendValidationError($validator->errors()->toArray());
         }
 
-        $bean->update($request->all());
+        $data = $request->except('image');
+        
+        // Handle file upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($bean->image_url && file_exists(public_path($bean->image_url))) {
+                unlink(public_path($bean->image_url));
+            }
+            
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('storage/coffee-beans'), $imageName);
+            $data['image_url'] = '/storage/coffee-beans/' . $imageName;
+        }
+
+        $bean->update($data);
 
         return $this->sendResponse($bean, 'Coffee bean updated successfully');
     }

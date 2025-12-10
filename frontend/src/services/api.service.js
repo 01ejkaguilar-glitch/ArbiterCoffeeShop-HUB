@@ -112,12 +112,21 @@ const apiService = {
   },
 
   // GET request
-  get: async (url, params = {}) => {
+  get: async (url, params = {}, bustCache = false) => {
     if (!apiService.isOnline()) {
       throw new Error('No internet connection');
     }
     try {
-      const response = await apiClient.get(url, { params });
+      const config = { params };
+      if (bustCache) {
+        config.headers = {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        };
+        // Add timestamp to URL to bypass browser cache
+        config.params = { ...params, _t: Date.now() };
+      }
+      const response = await apiClient.get(url, config);
       return response.data;
     } catch (error) {
       throw error;
@@ -157,7 +166,12 @@ const apiService = {
   // DELETE request
   delete: async (url) => {
     try {
-      const response = await apiClient.delete(url);
+      const response = await apiClient.delete(url, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       return response.data;
     } catch (error) {
       throw error;

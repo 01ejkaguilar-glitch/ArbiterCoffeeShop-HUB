@@ -19,7 +19,9 @@ const AdminUsers = () => {
     try {
       const response = await apiService.get(API_ENDPOINTS.ADMIN.USERS);
       if (response.success) {
-        setUsers(response.data);
+        // Handle paginated response
+        const usersData = response.data.data || response.data;
+        setUsers(Array.isArray(usersData) ? usersData : []);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -38,11 +40,14 @@ const AdminUsers = () => {
       customer: 'secondary'
     };
     
-    return roles.map((role, index) => (
-      <Badge key={index} bg={roleColors[role] || 'secondary'} className="me-1">
-        {role}
-      </Badge>
-    ));
+    return roles.map((role, index) => {
+      const roleName = typeof role === 'string' ? role : role.name;
+      return (
+        <Badge key={index} bg={roleColors[roleName] || 'secondary'} className="me-1">
+          {roleName}
+        </Badge>
+      );
+    });
   };
 
   const handleViewUser = (user) => {
@@ -51,13 +56,15 @@ const AdminUsers = () => {
   };
 
   const handleToggleStatus = async (userId, currentStatus) => {
-    const action = currentStatus === 'active' ? 'deactivate' : 'activate';
+    const action = currentStatus === 'active' ? 'deactivate' : 'reactivate';
     if (window.confirm(`Are you sure you want to ${action} this user?`)) {
       try {
-        const response = await apiService.patch(
-          API_ENDPOINTS.ADMIN.USER_DETAIL(userId),
-          { status: currentStatus === 'active' ? 'inactive' : 'active' }
-        );
+        let response;
+        if (action === 'deactivate') {
+          response = await apiService.delete(API_ENDPOINTS.ADMIN.USER_DETAIL(userId));
+        } else {
+          response = await apiService.post(`${API_ENDPOINTS.ADMIN.USER_DETAIL(userId)}/reactivate`);
+        }
 
         if (response.success) {
           alert(`User ${action}d successfully!`);

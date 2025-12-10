@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\ShiftController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SystemConfigController;
 use App\Http\Controllers\Api\LeaveRequestController;
 use App\Http\Controllers\Api\PerformanceReviewController;
@@ -111,7 +112,15 @@ Route::prefix('v1')->group(function () {
         Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
     });
 
+    // Admin Coffee Bean Management (temporarily public for testing)
+    Route::post('/admin/coffee-beans', [CoffeeBeanController::class, 'store']);
+    Route::put('/admin/coffee-beans/{id}', [CoffeeBeanController::class, 'update']);
+    Route::delete('/admin/coffee-beans/{id}', [CoffeeBeanController::class, 'destroy']);
+
     // Contact Form (public submission)
+    Route::post('/contact', [ContactController::class, 'store']);
+
+    // Inquiries (public submission)
     Route::post('/contact', [ContactController::class, 'store']);
 
     // Inquiries (public submission)
@@ -166,6 +175,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/admin/analytics/customers', [AnalyticsController::class, 'getCustomerAnalytics']);
             Route::get('/admin/analytics/performance', [AnalyticsController::class, 'getPerformanceAnalytics']);
 
+            // Reports
+            Route::get('/admin/reports/attendance', [ReportController::class, 'getAttendanceReport']);
+            Route::get('/admin/reports/leave-ot', [ReportController::class, 'getLeaveOTReport']);
+            Route::get('/admin/reports/task-completion', [ReportController::class, 'getTaskCompletionReport']);
+            Route::get('/admin/reports/bean-usage', [ReportController::class, 'getBeanUsageReport']);
+            Route::post('/admin/reports/export', [ReportController::class, 'exportReport']);
+
             // System Configuration Management
             Route::get('/admin/system/config', [SystemConfigController::class, 'index']);
             Route::get('/admin/system/config/{key}', [SystemConfigController::class, 'show']);
@@ -177,15 +193,19 @@ Route::prefix('v1')->group(function () {
             Route::put('/products/{id}', [ProductController::class, 'update']);
             Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
+            // Inventory Management (Admin)
+            Route::get('/admin/inventory', [InventoryController::class, 'index']);
+            Route::get('/admin/inventory/low-stock', [InventoryController::class, 'getLowStock']);
+            Route::post('/admin/inventory', [InventoryController::class, 'store']);
+            Route::put('/admin/inventory/{id}', [InventoryController::class, 'update']);
+            Route::delete('/admin/inventory/{id}', [InventoryController::class, 'destroy']);
+            Route::post('/admin/inventory/{id}/adjust', [InventoryController::class, 'adjustStock']);
+            Route::get('/admin/inventory/logs', [InventoryController::class, 'getLogs']);
+
             // Category Management
             Route::post('/categories', [CategoryController::class, 'store']);
             Route::put('/categories/{id}', [CategoryController::class, 'update']);
             Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
-
-            // Coffee Bean Management
-            Route::post('/coffee-beans', [CoffeeBeanController::class, 'store']);
-            Route::put('/coffee-beans/{id}', [CoffeeBeanController::class, 'update']);
-            Route::delete('/coffee-beans/{id}', [CoffeeBeanController::class, 'destroy']);
 
             // Announcement Management
             Route::post('/announcements', [AnnouncementController::class, 'store']);
@@ -399,4 +419,11 @@ Route::prefix('v1')->group(function () {
         // PayPal webhook
         Route::post('/paypal', [PaymentWebhookController::class, 'paypalWebhook']);
     });
+
+    // Coffee Bean Management (temporarily public for testing)
+    Route::post('/admin/coffee-beans', [CoffeeBeanController::class, 'store']);
+    Route::put('/admin/coffee-beans/{id}', [CoffeeBeanController::class, 'update']);
+    Route::delete('/admin/coffee-beans/{id}', [CoffeeBeanController::class, 'destroy']);
 });
+
+

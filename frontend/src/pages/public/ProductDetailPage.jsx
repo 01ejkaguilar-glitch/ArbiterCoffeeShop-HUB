@@ -68,7 +68,7 @@ const ProductDetailPage = () => {
       <Row>
         <Col md={6}>
           <img
-            src={product.image_url ? `${BACKEND_BASE_URL}${product.image_url}` : 'https://via.placeholder.com/500?text=Coffee'}
+            src={product.image_url ? `${BACKEND_BASE_URL}${product.image_url}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDUwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjI1MCIgeT0iMjUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMjQiPkNvZmZlZTwvdGV4dD4KPHN2Zz4='}
             alt={product.name}
             className="img-fluid rounded shadow-md-green"
           />

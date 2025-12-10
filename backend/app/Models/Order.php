@@ -78,6 +78,7 @@ class Order extends Model
         'special_instructions',
         'prepared_at',
         'completed_at',
+        'status_history',
     ];
 
     protected $casts = [
@@ -86,6 +87,7 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'prepared_at' => 'datetime',
         'completed_at' => 'datetime',
+        'status_history' => 'array',
     ];
 
     /**

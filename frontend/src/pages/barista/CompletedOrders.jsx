@@ -258,7 +258,7 @@ const CompletedOrders = () => {
                           {order.orderItems?.length > 2 && ` +${order.orderItems.length - 2} more`}
                         </small>
                       </td>
-                      <td>₱{order.total_amount?.toFixed(2)}</td>
+                      <td>₱{parseFloat(order.total_amount || 0).toFixed(2)}</td>
                       <td>
                         <small className="text-muted">
                           {new Date(order.updated_at).toLocaleTimeString()}

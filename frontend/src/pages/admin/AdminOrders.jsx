@@ -273,7 +273,7 @@ const AdminOrders = () => {
               </Row>
 
               <h6>Order Items:</h6>
-              <Table striped bordered hover size="sm">
+              <Table striped bordered hover size="sm" className="mb-4">
                 <thead>
                   <tr>
                     <th>Product</th>
@@ -293,6 +293,30 @@ const AdminOrders = () => {
                   ))}
                 </tbody>
               </Table>
+
+              {/* Order Timeline */}
+              {selectedOrder.status_history && Array.isArray(selectedOrder.status_history) && selectedOrder.status_history.length > 0 && (
+                <>
+                  <h6 className="mt-4 mb-3">Order Timeline:</h6>
+                  <div className="timeline mb-4">
+                    {selectedOrder.status_history.map((entry, index) => (
+                      <div key={index} className="timeline-item mb-2 pb-2 border-bottom">
+                        <div className="d-flex justify-content-between">
+                          <div>
+                            <Badge bg="secondary" className="me-2">{entry.from}</Badge>
+                            <FaEye className="mx-2" />
+                            <Badge bg="primary">{entry.to}</Badge>
+                          </div>
+                          <small className="text-muted">
+                            {new Date(entry.timestamp).toLocaleString()}
+                          </small>
+                        </div>
+                        <small className="text-muted">Updated by: {entry.updated_by}</small>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               <Form.Group className="mt-3">
                 <Form.Label>Update Status:</Form.Label>

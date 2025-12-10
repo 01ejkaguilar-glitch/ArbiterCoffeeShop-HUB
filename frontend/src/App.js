@@ -35,6 +35,9 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminInventory from './pages/admin/AdminInventory';
+import AdminReports from './pages/admin/AdminReports';
+import AdminCoffeeBeans from './pages/admin/AdminCoffeeBeans';
 
 // Barista Pages
 import BaristaDashboard from './pages/barista/BaristaDashboard';
@@ -157,6 +160,30 @@ function App() {
                   element={
                     <ProtectedRoute role="admin">
                       <AdminAnalytics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/inventory"
+                  element={
+                    <ProtectedRoute role="admin">
+                      <AdminInventory />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/reports"
+                  element={
+                    <ProtectedRoute role="admin">
+                      <AdminReports />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/coffee-beans"
+                  element={
+                    <ProtectedRoute role="admin">
+                      <AdminCoffeeBeans />
                     </ProtectedRoute>
                   }
                 />

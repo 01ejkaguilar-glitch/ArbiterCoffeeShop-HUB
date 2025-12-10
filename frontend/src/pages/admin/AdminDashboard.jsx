@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Alert } from 'react-bootstrap';
 import { FaShoppingBag, FaUsers, FaChartLine, FaBoxes, FaWifi, FaExclamationTriangle, FaBell } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
-import { useAutoRefresh, AutoRefreshControls } from '../../hooks/useAutoRefresh';
+import { AutoRefreshControls } from '../../hooks/useAutoRefresh';
 import { useBaristaOrders, useInventoryAlerts } from '../../hooks/useBroadcast';
 import { useNotificationSystem } from '../../components/common/NotificationSystem';
 import Loading from '../../components/common/Loading';
@@ -25,22 +25,48 @@ const AdminDashboard = () => {
     showLowStockAlert(item);
   });
 
-  // Auto-refresh dashboard data
-  const {
-    data: dashboardData,
-    loading,
-    error,
-    lastRefresh,
-    isAutoRefreshEnabled,
-    refresh,
-    toggleAutoRefresh
-  } = useAutoRefresh(async () => {
-    const response = await apiService.get(API_ENDPOINTS.ADMIN.DASHBOARD_STATS);
-    if (response.success) {
-      return response.data;
+  // Dashboard data state
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(false);
+
+  // Fetch dashboard data function
+  const fetchDashboardData = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      setError(null);
+
+      const response = await apiService.get(API_ENDPOINTS.ADMIN.DASHBOARD_STATS);
+      if (response.success) {
+        setDashboardData(response.data);
+        setLastRefresh(new Date());
+      } else {
+        throw new Error('Failed to fetch dashboard data');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to fetch dashboard data');
+      console.error('Dashboard fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-    throw new Error('Failed to fetch dashboard data');
-  }, 60000); // Refresh every minute
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Manual refresh function
+  const refresh = useCallback(() => {
+    fetchDashboardData(true);
+  }, [fetchDashboardData]);
+
+  // Toggle auto-refresh (disabled for now)
+  const toggleAutoRefresh = useCallback(() => {
+    setIsAutoRefreshEnabled(prev => !prev);
+  }, []);
 
   const stats = dashboardData?.stats || {
     totalOrders: 0,
@@ -179,7 +205,7 @@ const AdminDashboard = () => {
         </Col>
       </Row>
 
-      <Row className="g-4">
+      <Row className="g-4 mb-4">
         <Col md={6} lg={3}>
           <Card as={Link} to="/admin/products" className="text-decoration-none h-100 border-0 shadow-sm">
             <Card.Body className="text-center p-4">
@@ -229,6 +255,44 @@ const AdminDashboard = () => {
         </Col>
       </Row>
 
+      <Row className="g-4">
+        <Col md={6} lg={4}>
+          <Card as={Link} to="/admin/inventory" className="text-decoration-none h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <FaBoxes size={48} className="text-secondary mb-3" />
+              <Card.Title>Inventory</Card.Title>
+              <Card.Text className="text-muted">
+                Manage stock levels
+              </Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col md={6} lg={4}>
+          <Card as={Link} to="/admin/coffee-beans" className="text-decoration-none h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <FaBoxes size={48} className="text-brown mb-3" />
+              <Card.Title>Coffee Beans</Card.Title>
+              <Card.Text className="text-muted">
+                Manage coffee inventory
+              </Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col md={6} lg={4}>
+          <Card as={Link} to="/admin/reports" className="text-decoration-none h-100 border-0 shadow-sm">
+            <Card.Body className="text-center p-4">
+              <FaChartLine size={48} className="text-success mb-3" />
+              <Card.Title>Reports</Card.Title>
+              <Card.Text className="text-muted">
+                View comprehensive reports
+              </Card.Text>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
       <Row>
         <Col>
           <Card className="shadow-sm">
@@ -253,7 +317,7 @@ const AdminDashboard = () => {
                         <td>#{order.order_number || order.id}</td>
                         <td>{order.customer?.name || order.customer_name || 'N/A'}</td>
                         <td>{new Date(order.created_at).toLocaleDateString()}</td>
-                        <td>₱{order.total_amount?.toFixed(2) || '0.00'}</td>
+                        <td>₱{parseFloat(order.total_amount || 0).toFixed(2)}</td>
                         <td>{getStatusBadge(order.status)}</td>
                       </tr>
                     ))}

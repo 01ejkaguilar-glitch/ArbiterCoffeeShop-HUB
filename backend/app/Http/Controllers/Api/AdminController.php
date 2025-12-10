@@ -23,18 +23,16 @@ class AdminController extends BaseController
         try {
             $query = User::with('roles');
 
+            // Include trashed users if filtering by inactive, otherwise only active
+            if ($request->has('status') && $request->input('status') === 'inactive') {
+                $query->onlyTrashed();
+            } else {
+                $query->whereNull('deleted_at');
+            }
+
             // Filter by role
             if ($request->has('role')) {
                 $query->role($request->input('role'));
-            }
-
-            // Filter by status
-            if ($request->has('status')) {
-                if ($request->input('status') === 'active') {
-                    $query->whereNull('deleted_at');
-                } elseif ($request->input('status') === 'inactive') {
-                    $query->onlyTrashed();
-                }
             }
 
             // Search by name or email
@@ -52,6 +50,12 @@ class AdminController extends BaseController
             $query->orderBy($sortBy, $sortOrder);
 
             $users = $query->paginate($request->get('per_page', 15));
+
+            // Add status to each user
+            $users->getCollection()->transform(function ($user) {
+                $user->status = $user->trashed() ? 'inactive' : 'active';
+                return $user;
+            });
 
             return $this->sendResponse($users, 'Users retrieved successfully');
         } catch (\Exception $e) {
@@ -336,6 +340,18 @@ class AdminController extends BaseController
             $oldStatus = $order->status;
             $newStatus = $request->input('status');
 
+            // Create status history entry (store as JSON in a note or just log it)
+            $statusHistory = [
+                'from' => $oldStatus,
+                'to' => $newStatus,
+                'timestamp' => now()->toIso8601String(),
+                'updated_by' => auth()->user()->name ?? 'Admin'
+            ];
+
+            // For now, we'll just log the status change since status_history column doesn't exist
+            // You might want to add a status_history column or use a separate table for this
+            \Log::info('Order status changed', $statusHistory);
+
             $order->status = $newStatus;
 
             // Set completed_at timestamp when status is completed
@@ -343,9 +359,9 @@ class AdminController extends BaseController
                 $order->completed_at = now();
             }
 
-            // Set cancelled_at timestamp when status is cancelled
-            if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
-                $order->cancelled_at = now();
+            // Set prepared_at timestamp when status is ready
+            if ($newStatus === 'ready' && $oldStatus !== 'ready') {
+                $order->prepared_at = now();
             }
 
             $order->save();

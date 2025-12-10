@@ -71,7 +71,7 @@ const CartPage = () => {
                       <td>
                         <div className="d-flex align-items-center">
                           <img
-                            src={item.product?.image_url ? `${BACKEND_BASE_URL}${item.product.image_url}` : 'https://via.placeholder.com/80'}
+                            src={item.product?.image_url ? `${BACKEND_BASE_URL}${item.product.image_url}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjQwIiB5PSI0MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zNWVtIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj5Db2ZmZWU8L3RleHQ+Cjxzdmc+'}
                             alt={item.product?.name}
                             width="80"
                             height="80"
@@ -135,7 +135,7 @@ const CartPage = () => {
             <Card.Body>
               <div className="d-flex justify-content-between mb-2">
                 <span>Subtotal:</span>
-                <span className="fw-bold">₱{cart?.subtotal?.toFixed(2)}</span>
+                <span className="fw-bold">₱{parseFloat(cart?.subtotal || 0).toFixed(2)}</span>
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span>Delivery Fee:</span>

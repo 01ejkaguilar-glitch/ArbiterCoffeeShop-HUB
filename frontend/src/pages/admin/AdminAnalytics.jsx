@@ -50,7 +50,7 @@ const AdminAnalytics = () => {
                 </div>
                 <div>
                   <h6 className="text-muted mb-1">Total Revenue</h6>
-                  <h4 className="mb-0">₱{analytics?.totalRevenue?.toFixed(2) || '0.00'}</h4>
+                  <h4 className="mb-0">₱{parseFloat(analytics?.totalRevenue || 0).toFixed(2)}</h4>
                 </div>
               </div>
             </Card.Body>
@@ -95,7 +95,7 @@ const AdminAnalytics = () => {
                 </div>
                 <div>
                   <h6 className="text-muted mb-1">Avg Order Value</h6>
-                  <h4 className="mb-0">₱{analytics?.averageOrderValue?.toFixed(2) || '0.00'}</h4>
+                  <h4 className="mb-0">₱{parseFloat(analytics?.averageOrderValue || 0).toFixed(2)}</h4>
                 </div>
               </div>
             </Card.Body>
@@ -127,7 +127,7 @@ const AdminAnalytics = () => {
                           <Badge bg="secondary">{product.category}</Badge>
                         </td>
                         <td className="text-end">{product.total_sold || 0}</td>
-                        <td className="text-end">₱{product.revenue?.toFixed(2) || '0.00'}</td>
+                        <td className="text-end">₱{parseFloat(product.revenue || 0).toFixed(2)}</td>
                       </tr>
                     ))
                   ) : (
@@ -163,8 +163,8 @@ const AdminAnalytics = () => {
                       <tr key={index}>
                         <td>{category.name}</td>
                         <td className="text-end">{category.order_count || 0}</td>
-                        <td className="text-end">₱{category.revenue?.toFixed(2) || '0.00'}</td>
-                        <td className="text-end">{category.percentage?.toFixed(1) || '0'}%</td>
+                        <td className="text-end">₱{parseFloat(category.revenue || 0).toFixed(2)}</td>
+                        <td className="text-end">{parseFloat(category.percentage || 0).toFixed(1)}%</td>
                       </tr>
                     ))
                   ) : (
@@ -212,8 +212,8 @@ const AdminAnalytics = () => {
                           </Badge>
                         </td>
                         <td className="text-end">{status.count || 0}</td>
-                        <td className="text-end">₱{status.total?.toFixed(2) || '0.00'}</td>
-                        <td className="text-end">{status.percentage?.toFixed(1) || '0'}%</td>
+                        <td className="text-end">₱{parseFloat(status.total || 0).toFixed(2)}</td>
+                        <td className="text-end">{parseFloat(status.percentage || 0).toFixed(1)}%</td>
                       </tr>
                     ))
                   ) : (

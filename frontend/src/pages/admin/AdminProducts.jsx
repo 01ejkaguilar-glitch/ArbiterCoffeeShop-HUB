@@ -10,7 +10,11 @@ const AdminProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showBatchModal, setShowBatchModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [batchAction, setBatchAction] = useState('');
+  const [batchValue, setBatchValue] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -214,6 +218,62 @@ const AdminProducts = () => {
     }
   };
 
+  const toggleProductSelection = (productId) => {
+    setSelectedProducts(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.length === products.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(products.map(p => p.id));
+    }
+  };
+
+  const handleBatchAction = async () => {
+    if (selectedProducts.length === 0) {
+      setAlert({ show: true, message: 'Please select products first', type: 'warning' });
+      return;
+    }
+
+    try {
+      let updateData = {};
+      switch (batchAction) {
+        case 'price':
+          updateData = { price: parseFloat(batchValue) };
+          break;
+        case 'stock':
+          updateData = { stock_quantity: parseInt(batchValue) };
+          break;
+        case 'available':
+          updateData = { is_available: batchValue === 'true' };
+          break;
+        default:
+          return;
+      }
+
+      // Update each selected product
+      await Promise.all(
+        selectedProducts.map(productId =>
+          apiService.put(API_ENDPOINTS.PRODUCTS.UPDATE(productId), updateData)
+        )
+      );
+
+      setAlert({ show: true, message: `Updated ${selectedProducts.length} products successfully!`, type: 'success' });
+      setShowBatchModal(false);
+      setSelectedProducts([]);
+      setBatchAction('');
+      setBatchValue('');
+      fetchProducts();
+    } catch (error) {
+      setAlert({ show: true, message: 'Failed to update products', type: 'danger' });
+    }
+  };
+
   if (loading) {
     return <Loading message="Loading products..." />;
   }
@@ -227,10 +287,17 @@ const AdminProducts = () => {
               <h1 className="display-5 fw-bold">Products Management</h1>
               <p className="lead text-muted">Manage your product catalog</p>
             </div>
-            <Button variant="primary" size="lg" onClick={() => handleShowModal()}>
-              <FaPlus className="me-2" />
-              Add Product
-            </Button>
+            <div>
+              {selectedProducts.length > 0 && (
+                <Button variant="warning" className="me-2" onClick={() => setShowBatchModal(true)}>
+                  Batch Actions ({selectedProducts.length})
+                </Button>
+              )}
+              <Button variant="primary" size="lg" onClick={() => handleShowModal()}>
+                <FaPlus className="me-2" />
+                Add Product
+              </Button>
+            </div>
           </div>
         </Col>
       </Row>
@@ -252,6 +319,13 @@ const AdminProducts = () => {
               <Table responsive hover>
                 <thead>
                   <tr>
+                    <th>
+                      <Form.Check
+                        type="checkbox"
+                        checked={selectedProducts.length === products.length && products.length > 0}
+                        onChange={toggleSelectAll}
+                      />
+                    </th>
                     <th>ID</th>
                     <th>Product</th>
                     <th>Category</th>
@@ -265,11 +339,18 @@ const AdminProducts = () => {
                   {products.length > 0 ? (
                     products.map((product) => (
                       <tr key={product.id}>
+                        <td>
+                          <Form.Check
+                            type="checkbox"
+                            checked={selectedProducts.includes(product.id)}
+                            onChange={() => toggleProductSelection(product.id)}
+                          />
+                        </td>
                         <td>{product.id}</td>
                         <td>
                           <div className="d-flex align-items-center">
                             <img
-                              src={product.image_url ? `${BACKEND_BASE_URL}${product.image_url}` : 'https://via.placeholder.com/50'}
+                              src={product.image_url ? `${BACKEND_BASE_URL}${product.image_url}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zNWVtIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj5ObyBJbWFnZTwvdGV4dD4KPHN2Zz4='}
                               alt={product.name}
                               width="50"
                               height="50"
@@ -307,7 +388,7 @@ const AdminProducts = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="text-center text-muted py-4">
+                      <td colSpan="8" className="text-center text-muted py-4">
                         No products found
                       </td>
                     </tr>
@@ -364,7 +445,7 @@ const AdminProducts = () => {
                   <small className="text-muted">Current image:</small>
                   <br />
                   <img
-                    src={editingProduct.image_url ? `${BACKEND_BASE_URL}${editingProduct.image_url}` : 'https://via.placeholder.com/50'}
+                    src={editingProduct.image_url ? `${BACKEND_BASE_URL}${editingProduct.image_url}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zNWVtIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj5ObyBJbWFnZTwvdGV4dD4KPHN2Zz4='}
                     alt="Current product"
                     style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
                     className="border rounded"
@@ -437,6 +518,81 @@ const AdminProducts = () => {
             </Button>
           </Modal.Footer>
         </Form>
+      </Modal>
+
+      {/* Batch Actions Modal */}
+      <Modal show={showBatchModal} onHide={() => setShowBatchModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Batch Update ({selectedProducts.length} products)</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group className="mb-3">
+            <Form.Label>Action</Form.Label>
+            <Form.Select
+              value={batchAction}
+              onChange={(e) => {
+                setBatchAction(e.target.value);
+                setBatchValue('');
+              }}
+            >
+              <option value="">Select action...</option>
+              <option value="price">Update Price</option>
+              <option value="stock">Update Stock</option>
+              <option value="available">Update Availability</option>
+            </Form.Select>
+          </Form.Group>
+
+          {batchAction === 'price' && (
+            <Form.Group className="mb-3">
+              <Form.Label>New Price</Form.Label>
+              <Form.Control
+                type="number"
+                step="0.01"
+                value={batchValue}
+                onChange={(e) => setBatchValue(e.target.value)}
+                placeholder="Enter new price"
+              />
+            </Form.Group>
+          )}
+
+          {batchAction === 'stock' && (
+            <Form.Group className="mb-3">
+              <Form.Label>New Stock Quantity</Form.Label>
+              <Form.Control
+                type="number"
+                value={batchValue}
+                onChange={(e) => setBatchValue(e.target.value)}
+                placeholder="Enter new stock quantity"
+              />
+            </Form.Group>
+          )}
+
+          {batchAction === 'available' && (
+            <Form.Group className="mb-3">
+              <Form.Label>Availability Status</Form.Label>
+              <Form.Select
+                value={batchValue}
+                onChange={(e) => setBatchValue(e.target.value)}
+              >
+                <option value="">Select status...</option>
+                <option value="true">Available</option>
+                <option value="false">Unavailable</option>
+              </Form.Select>
+            </Form.Group>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowBatchModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleBatchAction}
+            disabled={!batchAction || !batchValue}
+          >
+            Apply to {selectedProducts.length} Products
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );
