@@ -193,4 +193,33 @@ class ProductController extends BaseController
 
         return $this->sendResponse(null, 'Product deleted successfully');
     }
+
+    /**
+     * Get recipe instructions for a product
+     */
+    public function getRecipe($id)
+    {
+        try {
+            $product = Product::find($id);
+
+            if (!$product) {
+                return $this->sendNotFound('Product not found');
+            }
+
+            $recipe = [
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'brewing_method' => $product->brewing_method,
+                'recommended_water_temp' => $product->recommended_water_temp,
+                'recommended_brew_time' => $product->recommended_brew_time,
+                'coffee_to_water_ratio' => $product->coffee_to_water_ratio,
+                'grind_size' => $product->grind_size,
+                'steps' => $product->recipe_instructions ?? [],
+            ];
+
+            return $this->sendResponse($recipe, 'Recipe retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to retrieve recipe', 500, ['error' => $e->getMessage()]);
+        }
+    }
 }

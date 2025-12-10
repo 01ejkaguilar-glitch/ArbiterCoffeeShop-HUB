@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Table, Spinner, Alert, Form, InputGroup, Dropdown, Pagination } from 'react-bootstrap';
-import { FaEye, FaRedo, FaWifi, FaExclamationTriangle, FaSearch, FaFilter, FaDownload, FaRedoAlt, FaCalendarAlt, FaSort } from 'react-icons/fa';
+import { FaEye, FaRedo, FaWifi, FaExclamationTriangle, FaSearch, FaFilter, FaDownload, FaRedoAlt, FaCalendarAlt, FaSort, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useOrderUpdates } from '../../hooks/useBroadcast';
@@ -89,6 +89,32 @@ const OrderHistory = () => {
     }
   };
 
+  const handleCancelRequest = async (orderId) => {
+    if (!window.confirm('Are you sure you want to request cancellation for this order? This action requires admin approval.')) {
+      return;
+    }
+
+    try {
+      const response = await apiService.post(API_ENDPOINTS.ORDERS.CANCEL_REQUEST(orderId));
+      if (response.success) {
+        // Update the order status in local state
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === orderId 
+              ? { ...order, status: 'cancellation_requested' } 
+              : order
+          )
+        );
+        alert('Cancellation request submitted successfully. Please wait for admin confirmation.');
+      } else {
+        setError(response.message || 'Failed to request cancellation');
+      }
+    } catch (error) {
+      console.error('Error requesting cancellation:', error);
+      setError(error.response?.data?.message || 'Failed to request cancellation. Please try again.');
+    }
+  };
+
   const handleDownloadReceipt = async (orderId) => {
     try {
       // In a real implementation, this would call an API endpoint to generate/download the receipt
@@ -156,9 +182,19 @@ Thank you for your business!
       preparing: 'primary',
       ready: 'success',
       completed: 'success',
-      cancelled: 'danger'
+      cancelled: 'danger',
+      cancellation_requested: 'warning',
     };
-    return <Badge bg={statusColors[status] || 'secondary'}>{status}</Badge>;
+    const statusLabels = {
+      pending: 'Pending',
+      confirmed: 'Confirmed',
+      preparing: 'Preparing',
+      ready: 'Ready',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+      cancellation_requested: 'Cancel Requested',
+    };
+    return <Badge bg={statusColors[status] || 'secondary'}>{statusLabels[status] || status}</Badge>;
   };
 
   const filteredAndSortedOrders = useMemo(() => {
@@ -476,6 +512,28 @@ Thank you for your business!
                             >
                               <FaDownload />
                             </Button>
+                            {/* Cancel button - only show for pending or confirmed orders */}
+                            {(order.status === 'pending' || order.status === 'confirmed') && (
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => handleCancelRequest(order.id)}
+                                title="Request Cancellation"
+                              >
+                                <FaTimes />
+                              </Button>
+                            )}
+                            {/* Show info if cancellation requested */}
+                            {order.status === 'cancellation_requested' && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled
+                                title="Cancellation Pending Admin Approval"
+                              >
+                                Pending
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>

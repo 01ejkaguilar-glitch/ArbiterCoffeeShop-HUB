@@ -19,7 +19,7 @@ const ProtectedRoute = ({ children, role }) => {
   }
 
   // Check role if specified
-  if (role && user?.roles && !user.roles.includes(role)) {
+  if (role && (!user?.roles || !Array.isArray(user.roles) || !user.roles.includes(role))) {
     return <Navigate to="/dashboard" replace />;
   }
 

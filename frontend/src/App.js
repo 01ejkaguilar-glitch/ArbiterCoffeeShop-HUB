@@ -36,6 +36,15 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 
+// Barista Pages
+import BaristaDashboard from './pages/barista/BaristaDashboard';
+import OrderQueue from './pages/barista/OrderQueue';
+import CoffeeBeanControl from './pages/barista/CoffeeBeanControl';
+import TrainingInsights from './pages/barista/TrainingInsights';
+import CompletedOrders from './pages/barista/CompletedOrders';
+import TodaysOriginManagement from './pages/barista/TodaysOriginManagement';
+import InventoryChecklist from './pages/barista/InventoryChecklist';
+
 // Protected Route Component
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -152,7 +161,63 @@ function App() {
                   }
                 />
 
-                {/* 404 Page */}
+                {/* Barista Routes - Protected */}
+                <Route
+                  path="/barista/dashboard"
+                  element={
+                    <ProtectedRoute role="barista">
+                      <BaristaDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/barista/orders"
+                  element={
+                    <ProtectedRoute role="barista">
+                      <OrderQueue />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/barista/beans"
+                  element={
+                    <ProtectedRoute role="barista">
+                      <CoffeeBeanControl />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/barista/training"
+                  element={
+                    <ProtectedRoute role="barista">
+                      <TrainingInsights />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/barista/completed"
+                  element={
+                    <ProtectedRoute role="barista">
+                      <CompletedOrders />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/barista/featured-origins"
+                  element={
+                    <ProtectedRoute role="barista">
+                      <TodaysOriginManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/barista/inventory"
+                  element={
+                    <ProtectedRoute role="barista">
+                      <InventoryChecklist />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </main>

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\CoffeeBeanController;
 use App\Http\Controllers\Api\V1\PublicController;
 use App\Http\Controllers\Api\V1\HealthCheckController;
 use App\Http\Controllers\Api\V1\NotificationController;
+use App\Http\Controllers\Api\V1\FeaturedOriginController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\AddressController;
@@ -85,6 +86,7 @@ Route::prefix('v1')->group(function () {
         // Products (public browsing)
         Route::get('/products', [ProductController::class, 'index']);
         Route::get('/products/{id}', [ProductController::class, 'show']);
+        Route::get('/products/{id}/recipe', [ProductController::class, 'getRecipe']);
 
         // Categories (public browsing)
         Route::get('/categories', [CategoryController::class, 'index']);
@@ -238,6 +240,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/orders/{id}/reorder', [OrderController::class, 'reorder'])
                 ->middleware('throttle.user:5,1'); // 5 reorders per minute per user
             Route::post('/orders/{id}/confirm', [OrderController::class, 'confirm']);
+            Route::post('/orders/{id}/cancel-request', [OrderController::class, 'requestCancellation']);
 
             // Shopping Cart
             Route::get('/cart', [CartController::class, 'index']);
@@ -251,32 +254,51 @@ Route::prefix('v1')->group(function () {
             // Route::post('/payments/maya', [PaymentController::class, 'processMaya']); // Temporarily disabled
             Route::post('/payments/cash', [PaymentController::class, 'recordCash']);
             Route::get('/payments/{id}/status', [PaymentController::class, 'checkStatus']);
+
+            // ==================================================
+            // BARISTA PORTAL ROUTES
+            // ==================================================
+
+            Route::middleware('role:barista|admin|super-admin')->prefix('barista')->group(function () {
+
+                // Barista Dashboard
+                Route::get('/dashboard', [BaristaController::class, 'getDashboard']);
+
+                // Order Queue Management
+                Route::get('/orders/queue', [BaristaController::class, 'getOrderQueue']);
+                Route::put('/orders/{id}/status', [BaristaController::class, 'updateOrderStatus']);
+                Route::get('/orders/completed', [BaristaController::class, 'getCompletedOrders']);
+
+                // Coffee Bean Management (for baristas)
+                Route::get('/beans', [BaristaController::class, 'listCoffeeBeans']);
+                Route::post('/beans', [BaristaController::class, 'addCoffeeBean']);
+                Route::put('/beans/{id}/stock', [BaristaController::class, 'updateBeanStock']);
+                Route::delete('/beans/{id}', [BaristaController::class, 'archiveCoffeeBean']);
+
+                // Barista Performance
+                Route::get('/performance', [BaristaController::class, 'getPerformance']);
+
+                // Shift Information
+                Route::get('/shift/current', [BaristaController::class, 'getCurrentShift']);
+
+                // Today's Tasks
+                Route::get('/tasks/today', [BaristaController::class, 'getTodaysTasks']);
+
+                // Today's Origin Management
+                Route::get('/featured-origins/today', [FeaturedOriginController::class, 'getToday']);
+                Route::get('/featured-origins/today-scheduled', [FeaturedOriginController::class, 'getTodayScheduled']);
+                Route::get('/featured-origins/by-date', [FeaturedOriginController::class, 'getByDate']);
+                Route::get('/featured-origins/available-beans', [FeaturedOriginController::class, 'getAvailableBeans']);
+                Route::get('/featured-origins', [FeaturedOriginController::class, 'index']);
+                Route::post('/featured-origins', [FeaturedOriginController::class, 'store']);
+                Route::get('/featured-origins/{id}', [FeaturedOriginController::class, 'show']);
+                Route::put('/featured-origins/{id}', [FeaturedOriginController::class, 'update']);
+                Route::delete('/featured-origins/{id}', [FeaturedOriginController::class, 'destroy']);
+            });
         });
 
         // Order Notifications (accessible by customer, barista, manager, admin)
         Route::post('/orders/{id}/notifications', [OrderController::class, 'sendNotification']);
-
-        // ==================================================
-        // BARISTA PORTAL ROUTES
-        // ==================================================
-
-        Route::middleware('role:barista|admin|super-admin')->prefix('barista')->group(function () {
-
-            // Barista Dashboard
-            Route::get('/dashboard', [BaristaController::class, 'getDashboard']);
-
-            // Order Queue Management
-            Route::get('/orders/queue', [BaristaController::class, 'getOrderQueue']);
-            Route::put('/orders/{id}/status', [BaristaController::class, 'updateOrderStatus']);
-            Route::get('/orders/completed', [BaristaController::class, 'getCompletedOrders']);
-
-            // Coffee Bean Management (for baristas)
-            Route::get('/beans', [BaristaController::class, 'listCoffeeBeans']);
-            Route::put('/beans/{id}/stock', [BaristaController::class, 'updateBeanStock']);
-
-            // Barista Performance
-            Route::get('/performance', [BaristaController::class, 'getPerformance']);
-        });
 
         // ==================================================
         // WORKFORCE MANAGER ROUTES

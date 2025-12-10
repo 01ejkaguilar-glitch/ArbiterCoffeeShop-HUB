@@ -61,6 +61,7 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
+        'barista_id',
         'order_number',
         'status',
         'order_type',
@@ -107,6 +108,14 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the barista assigned to the order.
+     */
+    public function barista()
+    {
+        return $this->belongsTo(User::class, 'barista_id');
     }
 
     /**

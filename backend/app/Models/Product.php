@@ -56,6 +56,12 @@ class Product extends Model
         'stock_quantity',
         'is_available',
         'customization_options',
+        'recipe_instructions',
+        'brewing_method',
+        'recommended_water_temp',
+        'recommended_brew_time',
+        'coffee_to_water_ratio',
+        'grind_size',
     ];
 
     protected $casts = [
@@ -63,6 +69,10 @@ class Product extends Model
         'stock_quantity' => 'integer',
         'is_available' => 'boolean',
         'customization_options' => 'array',
+        'recipe_instructions' => 'array',
+        'recommended_water_temp' => 'decimal:1',
+        'recommended_brew_time' => 'integer',
+        'coffee_to_water_ratio' => 'decimal:2',
     ];
 
     /**

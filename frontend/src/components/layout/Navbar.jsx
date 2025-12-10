@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Navbar as BSNavbar, Nav, Container, Badge, Dropdown } from 'react-bootstrap';
-import { FaShoppingCart, FaUser, FaCoffee, FaSignOutAlt, FaTachometerAlt } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaCoffee, FaSignOutAlt, FaTachometerAlt, FaUtensils, FaChartLine } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 
@@ -91,6 +91,29 @@ const Navbar = () => {
                       <Dropdown.Divider />
                       <Dropdown.Item as={Link} to="/admin" onClick={closeNav}>
                         Admin Panel
+                      </Dropdown.Item>
+                    </>
+                  )}
+
+                  {user?.roles?.includes('barista') && (
+                    <>
+                      <Dropdown.Divider />
+                      <Dropdown.Header>Barista Portal</Dropdown.Header>
+                      <Dropdown.Item as={Link} to="/barista/dashboard" onClick={closeNav}>
+                        <FaCoffee className="me-2" />
+                        Barista Dashboard
+                      </Dropdown.Item>
+                      <Dropdown.Item as={Link} to="/barista/orders" onClick={closeNav}>
+                        <FaUtensils className="me-2" />
+                        Order Queue
+                      </Dropdown.Item>
+                      <Dropdown.Item as={Link} to="/barista/beans" onClick={closeNav}>
+                        <FaCoffee className="me-2" />
+                        Coffee Beans
+                      </Dropdown.Item>
+                      <Dropdown.Item as={Link} to="/barista/training" onClick={closeNav}>
+                        <FaChartLine className="me-2" />
+                        Training Insights
                       </Dropdown.Item>
                     </>
                   )}

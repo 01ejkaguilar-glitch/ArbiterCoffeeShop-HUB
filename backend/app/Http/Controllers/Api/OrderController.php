@@ -288,6 +288,54 @@ class OrderController extends BaseController
     }
 
     /**
+     * Request order cancellation
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function requestCancellation($id)
+    {
+        try {
+            $user = Auth::user();
+
+            $order = Order::where('user_id', $user->id)
+                ->where('id', $id)
+                ->first();
+
+            if (!$order) {
+                return $this->sendError('Order not found', 404);
+            }
+
+            // Check if order can be cancelled
+            $cancellableStatuses = ['pending', 'confirmed'];
+            if (!in_array($order->status, $cancellableStatuses)) {
+                return $this->sendError(
+                    'Order cannot be cancelled at this stage. Only pending or confirmed orders can be cancelled.',
+                    400
+                );
+            }
+
+            // Check if cancellation already requested
+            if ($order->status === 'cancellation_requested') {
+                return $this->sendError('Cancellation request already submitted', 400);
+            }
+
+            // Update order status to cancellation_requested
+            $order->status = 'cancellation_requested';
+            $order->save();
+
+            // In a real implementation, you would:
+            // 1. Send notification to admin
+            // 2. Log the cancellation request
+            // 3. Create a cancellation record with reason
+
+            return $this->sendResponse($order, 'Cancellation request submitted successfully. Please wait for admin confirmation.');
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to request cancellation', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Confirm order (for cash payments)
      *
      * @param int $id

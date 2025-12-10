@@ -50,6 +50,7 @@ export const API_ENDPOINTS = {
     DETAIL: (id) => `${API_BASE_URL}/orders/${id}`,
     REORDER: (id) => `${API_BASE_URL}/orders/${id}/reorder`,
     CONFIRM: (id) => `${API_BASE_URL}/orders/${id}/confirm`,
+    CANCEL_REQUEST: (id) => `${API_BASE_URL}/orders/${id}/cancel-request`,
   },
 
   // Cart
@@ -136,5 +137,24 @@ export const API_ENDPOINTS = {
     DASHBOARD: `${API_BASE_URL}/barista/dashboard`,
     ORDER_QUEUE: `${API_BASE_URL}/barista/orders/queue`,
     UPDATE_ORDER: (id) => `${API_BASE_URL}/barista/orders/${id}/status`,
+    COMPLETED_ORDERS: `${API_BASE_URL}/barista/orders/completed`,
+    PERFORMANCE: `${API_BASE_URL}/barista/performance`,
+    SHIFT_CURRENT: `${API_BASE_URL}/barista/shift/current`,
+    TASKS_TODAY: `${API_BASE_URL}/barista/tasks/today`,
+    COFFEE_BEANS: {
+      LIST: `${API_BASE_URL}/barista/beans`,
+      CREATE: `${API_BASE_URL}/barista/beans`,
+      UPDATE_STOCK: (id) => `${API_BASE_URL}/barista/beans/${id}/stock`,
+      ARCHIVE: (id) => `${API_BASE_URL}/barista/beans/${id}`,
+    },
+    FEATURED_ORIGINS: {
+      LIST: `${API_BASE_URL}/barista/featured-origins`,
+      CREATE: `${API_BASE_URL}/barista/featured-origins`,
+      UPDATE: (id) => `${API_BASE_URL}/barista/featured-origins/${id}`,
+      DELETE: (id) => `${API_BASE_URL}/barista/featured-origins/${id}`,
+      AVAILABLE_BEANS: `${API_BASE_URL}/barista/featured-origins/available-beans`,
+      TODAY: `${API_BASE_URL}/barista/featured-origins/today`,
+      BY_DATE: `${API_BASE_URL}/barista/featured-origins/by-date`,
+    },
   },
 };

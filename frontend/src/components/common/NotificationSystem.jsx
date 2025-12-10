@@ -153,7 +153,7 @@ const NotificationContainer = () => {
   const { notifications, removeNotification } = useNotificationSystem();
 
   const getIcon = (type, customIcon) => {
-    if (customIcon) return customIcon;
+    if (customIcon) return React.createElement(customIcon, { className: `text-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : 'success'}` });
 
     switch (type) {
       case 'success':

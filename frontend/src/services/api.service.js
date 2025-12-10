@@ -125,9 +125,9 @@ const apiService = {
   },
 
   // POST request
-  post: async (url, data = {}) => {
+  post: async (url, data = {}, config = {}) => {
     try {
-      const response = await apiClient.post(url, data);
+      const response = await apiClient.post(url, data, config);
       return response.data;
     } catch (error) {
       throw error;

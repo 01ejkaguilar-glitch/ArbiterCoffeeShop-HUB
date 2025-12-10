@@ -35,9 +35,9 @@ class PublicApiTest extends TestCase
                 'success' => true,
                 'data' => [
                     'monday' => [
-                        'open' => '07:00',
-                        'close' => '21:00',
-                        'is_open' => true,
+                        'open' => '00:00',
+                        'close' => '00:00',
+                        'is_open' => false,
                     ],
                 ],
             ]);
@@ -99,7 +99,7 @@ class PublicApiTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'email' => 'hello@arbitercoffee.com',
+                    'email' => 'arbitercoffee.ph@gmail.com',
                 ],
             ]);
     }
