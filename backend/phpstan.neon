@@ -1,5 +1,5 @@
-includes:
-    - ./vendor/larastan/larastan/extension.neon
+# includes:
+#     - ./vendor/larastan/larastan/extension.neon  # Requires larastan/larastan
 
 parameters:
     paths:

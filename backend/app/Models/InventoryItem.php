@@ -37,6 +37,8 @@ class InventoryItem extends Model
 
     protected $fillable = [
         'name',
+        'category',
+        'source',
         'type',
         'quantity',
         'unit',

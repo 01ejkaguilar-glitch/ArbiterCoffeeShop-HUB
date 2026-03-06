@@ -42,7 +42,7 @@ class OrderStatusNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['database', 'mail'];
     }
 
     /**
@@ -148,18 +148,38 @@ class OrderStatusNotification extends Notification implements ShouldQueue
     }
 
     /**
+     * Get the database representation of the notification.
+     *
+     * @return array<string, mixed>
+     */
+    public function toDatabase(object $notifiable): array
+    {
+        return [
+            'title' => $this->getSubject(),
+            'message' => $this->getStatusMessage(),
+            'type' => $this->notificationType === 'order_ready'
+                ? 'order_ready'
+                : 'order_status',
+            'data' => [
+                'order_id' => $this->order->id,
+                'order_number' => $this->order->order_number,
+                'status' => $this->order->status,
+                'total_amount' => $this->order->total_amount,
+            ],
+            'action' => [
+                'label' => 'View Order',
+                'url' => '/orders/' . $this->order->id,
+            ],
+        ];
+    }
+
+    /**
      * Get the array representation of the notification.
      *
      * @return array<string, mixed>
      */
     public function toArray(object $notifiable): array
     {
-        return [
-            'order_id' => $this->order->id,
-            'order_number' => $this->order->order_number,
-            'status' => $this->order->status,
-            'type' => $this->notificationType,
-            'total_amount' => $this->order->total_amount,
-        ];
+        return $this->toDatabase($notifiable);
     }
 }

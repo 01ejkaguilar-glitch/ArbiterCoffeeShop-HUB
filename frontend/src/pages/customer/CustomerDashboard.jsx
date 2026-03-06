@@ -1,285 +1,280 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Badge, Spinner, Alert } from 'react-bootstrap';
-import { FaShoppingBag, FaUser, FaHeart, FaClipboardList, FaCheckCircle, FaClock, FaDollarSign, FaStar } from 'react-icons/fa';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Container, Spinner, Button } from 'react-bootstrap';
+import {
+  FaShoppingBag, FaCheckCircle, FaClock, FaWallet,
+  FaCoffee, FaClipboardList, FaUser, FaStar,
+  FaChevronRight, FaArrowRight, FaFire,
+} from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
-import { CustomerInsightsCard } from '../../components/customer';
+import { AreaMetricChart } from '../../components/charts';
+import StatusBadge from '../../components/common/StatusBadge';
+import SEO from '../../components/SEO';
+import './CustomerDashboard.css';
+
+/* ── helpers ── */
+const fmt = (v) => { const n = parseFloat(v); return isNaN(n) ? '0.00' : n.toFixed(2); };
+
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
+const QUICK_ACTIONS = [
+  { path: '/products', label: 'Browse Menu', icon: FaCoffee, color: 'rgba(0,104,55,0.1)', iconColor: 'var(--color-dark-green)', desc: 'Discover new flavors' },
+    { path: '/orders', label: 'My Orders', icon: FaClipboardList, color: 'rgba(0,104,55,0.1)', iconColor: 'var(--color-dark-green)', desc: 'Track & manage orders' },
+    { path: '/cart', label: 'My Cart', icon: FaShoppingBag, color: 'rgba(155,107,0,0.1)', iconColor: 'var(--color-warning)', desc: 'Review your cart' },
+    { path: '/profile', label: 'Profile', icon: FaUser, color: 'rgba(0,104,55,0.1)', iconColor: 'var(--color-dark-green)', desc: 'Account settings' },
+];
+
+/* ── motion variants ── */
+const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.4 } }) };
+
+/* ================================================================ */
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState(null);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  const stats = dashboardData?.statistics || {};
+  const recentOrders = useMemo(() => dashboardData?.recent_orders || [], [dashboardData]);
+  const activeOrder = dashboardData?.active_order;
 
-  const fetchDashboardData = async () => {
+  /* chart data */
+  const orderHistoryData = useMemo(() => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const map = days.map((d) => ({ date: d, orders: 0 }));
+    if (recentOrders.length) {
+      recentOrders.forEach((o) => {
+        const idx = (new Date(o.created_at).getDay() + 6) % 7; // Mon=0
+        map[idx].orders += 1;
+      });
+    }
+    return map;
+  }, [recentOrders]);
+
+  useEffect(() => { fetchDashboard(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchAnalytics(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchDashboard = async () => {
     try {
       setLoading(true);
-      const response = await apiService.get(API_ENDPOINTS.CUSTOMER.DASHBOARD);
-      if (response.success) {
-        setDashboardData(response.data);
-      } else {
-        setError('Failed to load dashboard data');
-      }
-    } catch (err) {
-      setError('Failed to load dashboard data');
-      console.error('Dashboard fetch error:', err);
+      const res = await apiService.get(API_ENDPOINTS.CUSTOMER.DASHBOARD);
+      if (res.success) setDashboardData(res.data);
+      else setError('Failed to load dashboard');
+    } catch {
+      setError('Failed to load dashboard');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      pending: { variant: 'warning', text: 'Pending' },
-      preparing: { variant: 'info', text: 'Preparing' },
-      ready: { variant: 'primary', text: 'Ready' },
-      completed: { variant: 'success', text: 'Completed' },
-      cancelled: { variant: 'danger', text: 'Cancelled' },
-    };
-    const config = statusConfig[status] || { variant: 'secondary', text: status };
-    return <Badge bg={config.variant}>{config.text}</Badge>;
+  const fetchAnalytics = async () => {
+    try {
+      const res = await apiService.get(API_ENDPOINTS.CUSTOMER.ANALYTICS);
+      if (res.success) setAnalyticsData(res.data);
+    } catch {
+      // analytics is non-critical; silently skip on error
+    }
   };
 
+  /* ── Loading ─────────── */
   if (loading) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-        <p className="mt-3">Loading your dashboard...</p>
-      </Container>
+      <main role="main">
+        <Container className="py-5 text-center">
+          <Spinner animation="border" variant="success" />
+          <p className="mt-3 text-muted">Loading your dashboard…</p>
+        </Container>
+      </main>
     );
   }
 
+  /* ── Error ──────────── */
   if (error) {
     return (
-      <Container className="py-5">
-        <Alert variant="danger">
-          <Alert.Heading>Error Loading Dashboard</Alert.Heading>
-          <p>{error}</p>
-          <button className="btn btn-outline-danger" onClick={fetchDashboardData}>
-            Try Again
-          </button>
-        </Alert>
-      </Container>
+      <main role="main">
+        <Container className="py-5 text-center">
+          <p className="text-danger mb-3">{error}</p>
+          <Button variant="outline-primary" size="sm" onClick={fetchDashboard}>Retry</Button>
+        </Container>
+      </main>
     );
   }
 
-  const stats = dashboardData?.statistics || {};
-  const recentOrders = dashboardData?.recent_orders || [];
-  const activeOrder = dashboardData?.active_order;
+  const avgOrder = stats.total_orders > 0
+    ? ((parseFloat(stats.total_spent) || 0) / stats.total_orders).toFixed(2)
+    : '0.00';
+  const completionRate = stats.total_orders > 0
+    ? ((stats.completed_orders / stats.total_orders) * 100).toFixed(0)
+    : 0;
 
   return (
-    <Container className="py-5">
-      <Row className="mb-4">
-        <Col>
-          <h1 className="display-5 fw-bold">Welcome back, {user?.name}!</h1>
-          <p className="lead text-muted">Manage your orders and account</p>
-        </Col>
-      </Row>
+    <main role="main">
+      <SEO title="Dashboard" url="/customer/dashboard" />
+      <Container className="py-4">
 
-      {/* Statistics Cards */}
-      <Row className="g-4 mb-5">
-        <Col md={6} lg={3}>
-          <Card className="text-center border-0 shadow-sm h-100">
-            <Card.Body className="p-4">
-              <FaShoppingBag size={32} className="text-primary mb-2" />
-              <h3 className="fw-bold text-primary">{stats.total_orders || 0}</h3>
-              <p className="text-muted mb-0">Total Orders</p>
-            </Card.Body>
-          </Card>
-        </Col>
+        {/* ─── Hero Greeting ────────────────── */}
+        <motion.div className="cdb-hero" initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <p className="cdb-hero-greeting">{getGreeting()}</p>
+          <h1 className="cdb-hero-name">{user?.name || 'Coffee Lover'}</h1>
+          <p className="cdb-hero-subtitle">Here's what's happening with your coffee orders today.</p>
+          <div className="cdb-hero-member">
+            <FaStar size={14} />
+            Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}
+          </div>
+        </motion.div>
 
-        <Col md={6} lg={3}>
-          <Card className="text-center border-0 shadow-sm h-100">
-            <Card.Body className="p-4">
-              <FaCheckCircle size={32} className="text-success mb-2" />
-              <h3 className="fw-bold text-success">{stats.completed_orders || 0}</h3>
-              <p className="text-muted mb-0">Completed Orders</p>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card className="text-center border-0 shadow-sm h-100">
-            <Card.Body className="p-4">
-              <FaClock size={32} className="text-warning mb-2" />
-              <h3 className="fw-bold text-warning">{stats.active_orders || 0}</h3>
-              <p className="text-muted mb-0">Active Orders</p>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card className="text-center border-0 shadow-sm h-100">
-            <Card.Body className="p-4">
-              <FaDollarSign size={32} className="text-info mb-2" />
-              <h3 className="fw-bold text-info">₱{stats.total_spent || '0.00'}</h3>
-              <p className="text-muted mb-0">Total Spent</p>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Customer Insights */}
-      <Row className="mb-5">
-        <Col>
-          <h3 className="fw-bold mb-4">Your Insights</h3>
-          <CustomerInsightsCard />
-        </Col>
-      </Row>
-
-      {/* Quick Actions */}
-      <Row className="g-4 mb-5">
-        <Col md={6} lg={3}>
-          <Card as={Link} to="/orders" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaShoppingBag size={48} className="text-primary mb-3" />
-              <Card.Title>My Orders</Card.Title>
-              <Card.Text className="text-muted">
-                View and track your orders
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card as={Link} to="/profile" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaUser size={48} className="text-success mb-3" />
-              <Card.Title>Profile</Card.Title>
-              <Card.Text className="text-muted">
-                Manage your account details
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card as={Link} to="/cart" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaClipboardList size={48} className="text-info mb-3" />
-              <Card.Title>Shopping Cart</Card.Title>
-              <Card.Text className="text-muted">
-                Review items in your cart
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card as={Link} to="/products" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaHeart size={48} className="text-danger mb-3" />
-              <Card.Title>Browse Products</Card.Title>
-              <Card.Text className="text-muted">
-                Discover new coffee
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card as={Link} to="/insights" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaStar size={48} className="text-warning mb-3" />
-              <Card.Title>Your Insights</Card.Title>
-              <Card.Text className="text-muted">
-                View detailed analytics
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Active Order Alert */}
-      {activeOrder && (
-        <Row className="mb-4">
-          <Col>
-            <Alert variant="info" className="d-flex align-items-center">
-              <FaClock className="me-3" size={24} />
-              <div className="flex-grow-1">
-                <strong>Active Order #{activeOrder.id}</strong>
-                <p className="mb-0">Status: {getStatusBadge(activeOrder.status)}</p>
+        {/* ─── Active Order Banner ──────────── */}
+        {activeOrder && (
+          <motion.div className="cdb-active-order" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}>
+            <span className="cdb-active-pulse" />
+            <div className="cdb-active-info">
+              <div className="cdb-active-label">
+                Order #{activeOrder.id} is <StatusBadge type="order" status={activeOrder.status} />
               </div>
-              <Link to={`/orders/${activeOrder.id}`} className="btn btn-info">
-                View Details
-              </Link>
-            </Alert>
-          </Col>
-        </Row>
-      )}
+              <div className="cdb-active-meta">
+                {activeOrder.order_items?.length || '—'} items · ₱{fmt(activeOrder.total_amount)}
+              </div>
+            </div>
+            <Button as={Link} to={`/orders/${activeOrder.id}`} variant="warning" size="sm" className="cdb-active-btn fw-semibold">
+              Track Order <FaArrowRight className="ms-1" />
+            </Button>
+          </motion.div>
+        )}
 
-      {/* Recent Orders */}
-      <Row>
-        <Col lg={8}>
-          <Card className="shadow-sm">
-            <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Recent Orders</h5>
-              <Link to="/orders" className="btn btn-light btn-sm">View All</Link>
-            </Card.Header>
-            <Card.Body>
-              {recentOrders.length > 0 ? (
-                <div className="list-group list-group-flush">
-                  {recentOrders.map((order) => (
-                    <div key={order.id} className="list-group-item px-0 py-3">
-                      <div className="d-flex justify-content-between align-items-start">
-                        <div className="flex-grow-1">
-                          <h6 className="mb-1">Order #{order.id}</h6>
-                          <p className="text-muted mb-1">
-                            {new Date(order.created_at).toLocaleDateString()} • ₱{order.total_amount}
-                          </p>
-                          <div>
-                            {getStatusBadge(order.status)}
-                          </div>
-                        </div>
-                        <Link to={`/orders/${order.id}`} className="btn btn-outline-primary btn-sm">
-                          View Details
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
+        {/* ─── Stat Cards ───────────────────── */}
+        <div className="cdb-stats">
+          {[
+            { label: 'Total Orders', value: stats.total_orders || 0, Icon: FaShoppingBag, mod: 'orders' },
+            { label: 'Completed', value: stats.completed_orders || 0, Icon: FaCheckCircle, mod: 'completed' },
+            { label: 'Active', value: stats.active_orders || 0, Icon: FaClock, mod: 'active' },
+            { label: 'Total Spent', value: `₱${fmt(stats.total_spent)}`, Icon: FaWallet, mod: 'spent' },
+          ].map((s, i) => (
+            <motion.div key={s.label} className="cdb-stat-card" custom={i} initial="hidden" animate="visible" variants={fadeUp}>
+              <div className={`cdb-stat-icon cdb-stat-icon--${s.mod}`}><s.Icon /></div>
+              <div className="cdb-stat-value">{s.value}</div>
+              <div className="cdb-stat-label">{s.label}</div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ─── Quick Actions ────────────────── */}
+        <div className="cdb-actions">
+          {QUICK_ACTIONS.map((a, i) => (
+            <motion.div key={a.path} custom={i + 4} initial="hidden" animate="visible" variants={fadeUp}>
+              <Link to={a.path} className="cdb-action-card">
+                <div className="cdb-action-icon-wrap" style={{ background: a.color, color: a.iconColor }}>
+                  <a.icon />
                 </div>
-              ) : (
-                <p className="text-muted text-center py-4">
-                  No recent orders. <Link to="/products">Start shopping now!</Link>
-                </p>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
+                <span className="cdb-action-label">{a.label}</span>
+                <span className="cdb-action-desc">{a.desc}</span>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
 
-        <Col lg={4}>
-          <Card className="shadow-sm">
-            <Card.Header className="bg-success text-white">
-              <h5 className="mb-0">Quick Actions</h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="d-grid gap-2">
-                <Link to="/products" className="btn btn-outline-primary">
-                  Browse Products
-                </Link>
-                <Link to="/orders" className="btn btn-outline-secondary">
-                  Track Order
-                </Link>
-                <Link to="/insights" className="btn btn-outline-info">
-                  View Insights
-                </Link>
-                <Link to="/profile" className="btn btn-outline-info">
-                  Edit Profile
-                </Link>
+        {/* ─── Content Grid: Chart + Recent Orders ── */}
+        <div className="cdb-content-grid">
+
+          {/* Left — chart + quick stats */}
+          <div>
+            <AreaMetricChart
+              data={orderHistoryData}
+              title="Order Activity"
+              subtitle="Recent orders by day of week"
+              dataKey="orders"
+              xAxisKey="date"
+              height={220}
+              color="#006837"
+            />
+
+            <div className="cdb-quick-stats mt-3">
+              <div className="cdb-section-header">
+                <h2 className="cdb-section-title">Quick Stats</h2>
               </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+              <div className="cdb-quick-stat-row">
+                <span className="cdb-quick-stat-label">Avg Order Value</span>
+                <span className="cdb-quick-stat-value">₱{avgOrder}</span>
+              </div>
+              <div className="cdb-quick-stat-row">
+                <span className="cdb-quick-stat-label">Completion Rate</span>
+                <span className="cdb-quick-stat-value">{completionRate}%</span>
+              </div>
+              <div className="cdb-quick-stat-row">
+                <span className="cdb-quick-stat-label">Member Since</span>
+                <span className="cdb-quick-stat-value">
+                  {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
+                </span>
+              </div>
+            </div>
+
+            {/* Top products from analytics */}
+            {analyticsData?.top_products?.length > 0 && (
+              <div className="cdb-quick-stats mt-3">
+                <div className="cdb-section-header">
+                  <h2 className="cdb-section-title"><FaFire size={14} className="me-1" style={{ color: '#e67e22' }} />Top Products</h2>
+                </div>
+                {analyticsData.top_products.slice(0, 5).map((p, i) => (
+                  <div className="cdb-quick-stat-row" key={p.product_id || p.id || i}>
+                    <span className="cdb-quick-stat-label">{p.product_name || p.name}</span>
+                    <span className="cdb-quick-stat-value">{p.order_count || p.quantity || p.count}×</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right — recent orders */}
+          <div className="cdb-orders-card">
+            <div className="cdb-section-header">
+              <h2 className="cdb-section-title">Recent Orders</h2>
+              <Link to="/orders" className="cdb-section-link">
+                View All <FaChevronRight size={10} />
+              </Link>
+            </div>
+
+            {recentOrders.length > 0 ? (
+              recentOrders.map((order) => (
+                <Link key={order.id} to={`/orders/${order.id}`} className="cdb-order-item">
+                  <div className="cdb-order-num-wrap">
+                    <span className="cdb-order-num">#{order.id}</span>
+                  </div>
+                  <div className="cdb-order-details">
+                    <div className="cdb-order-title">
+                      Order #{order.id}
+                    </div>
+                    <div className="cdb-order-meta">
+                      {new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {' · '}
+                      <StatusBadge type="order" status={order.status} />
+                    </div>
+                  </div>
+                  <div className="cdb-order-right">
+                    <div className="cdb-order-amount">₱{fmt(order.total_amount)}</div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="cdb-empty">
+                <div className="cdb-empty-icon"><FaCoffee /></div>
+                <p className="cdb-empty-text">No orders yet. Ready for your first cup?</p>
+                <Link to="/products" className="cdb-empty-link">Browse Menu <FaArrowRight className="ms-1" size={12} /></Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </Container>
+    </main>
   );
 };
 

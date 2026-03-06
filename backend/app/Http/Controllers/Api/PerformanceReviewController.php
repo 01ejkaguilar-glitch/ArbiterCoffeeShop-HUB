@@ -18,10 +18,20 @@ class PerformanceReviewController extends BaseController
     {
         try {
             $user = Auth::user();
+            \Log::debug('PerformanceReviewController@show: entering', [
+                'user_id' => $user?->id ?? null,
+                'roles' => method_exists($user, 'getRoleNames') ? $user->getRoleNames()->toArray() : null,
+            ]);
             $employee = Employee::with('user')->findOrFail($employeeId);
 
-            // Check authorization
-            if (!$user->hasAnyRole(['manager', 'workforce-manager', 'admin', 'super-admin'])) {
+            // Check authorization (defensive: Spatie may throw in some test contexts)
+            try {
+                $isManager = $user->hasAnyRole(['manager', 'workforce-manager', 'admin', 'super-admin']);
+            } catch (\Spatie\Permission\Exceptions\UnauthorizedException $e) {
+                $isManager = false;
+            }
+
+            if (!$isManager) {
                 if ($employee->user_id !== $user->id) {
                     return $this->sendError('Unauthorized', 403);
                 }
@@ -98,8 +108,14 @@ class PerformanceReviewController extends BaseController
         try {
             $user = Auth::user();
 
-            // Only managers can submit performance reviews
-            if (!$user->hasAnyRole(['manager', 'workforce-manager', 'admin', 'super-admin'])) {
+            // Only managers can submit performance reviews (defensive)
+            try {
+                $canSubmit = $user->hasAnyRole(['manager', 'workforce-manager', 'admin', 'super-admin']);
+            } catch (\Spatie\Permission\Exceptions\UnauthorizedException $e) {
+                $canSubmit = false;
+            }
+
+            if (!$canSubmit) {
                 return $this->sendError('Unauthorized', 403);
             }
 
@@ -164,8 +180,14 @@ class PerformanceReviewController extends BaseController
             $user = Auth::user();
             $query = PerformanceReview::with(['employee.user', 'reviewer']);
 
-            // Employees can only see their own reviews
-            if (!$user->hasAnyRole(['manager', 'workforce-manager', 'admin', 'super-admin'])) {
+            // Employees can only see their own reviews (defensive role check)
+            try {
+                $isManager = $user->hasAnyRole(['manager', 'workforce-manager', 'admin', 'super-admin']);
+            } catch (\Spatie\Permission\Exceptions\UnauthorizedException $e) {
+                $isManager = false;
+            }
+
+            if (!$isManager) {
                 $employee = Employee::where('user_id', $user->id)->first();
                 if (!$employee) {
                     return $this->sendError('Employee profile not found', 404);
@@ -227,8 +249,14 @@ class PerformanceReviewController extends BaseController
 
             $user = Auth::user();
 
-            // Only managers can update performance reviews
-            if (!$user->hasAnyRole(['manager', 'workforce-manager', 'admin', 'super-admin'])) {
+            // Only managers can update performance reviews (defensive)
+            try {
+                $canUpdate = $user->hasAnyRole(['manager', 'workforce-manager', 'admin', 'super-admin']);
+            } catch (\Spatie\Permission\Exceptions\UnauthorizedException $e) {
+                $canUpdate = false;
+            }
+
+            if (!$canUpdate) {
                 return $this->sendError('Unauthorized', 403);
             }
 
@@ -293,8 +321,14 @@ class PerformanceReviewController extends BaseController
         try {
             $user = Auth::user();
 
-            // Only admins can delete performance reviews
-            if (!$user->hasAnyRole(['admin', 'super-admin'])) {
+            // Only admins can delete performance reviews (defensive)
+            try {
+                $canDelete = $user->hasAnyRole(['admin', 'super-admin']);
+            } catch (\Spatie\Permission\Exceptions\UnauthorizedException $e) {
+                $canDelete = false;
+            }
+
+            if (!$canDelete) {
                 return $this->sendError('Unauthorized', 403);
             }
 

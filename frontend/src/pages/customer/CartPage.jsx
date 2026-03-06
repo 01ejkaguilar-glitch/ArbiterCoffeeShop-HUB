@@ -1,6 +1,7 @@
 import React from 'react';
-import { Container, Row, Col, Card, Button, Table } from 'react-bootstrap';
+import { Row, Col, Card, Button, Table } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import PageShell from '../../components/layout/PageShell';
 import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { BACKEND_BASE_URL } from '../../config/api';
@@ -22,7 +23,7 @@ const CartPage = () => {
 
   if (cartCount === 0) {
     return (
-      <Container className="py-5">
+      <PageShell title="Shopping Cart">
         <Row className="justify-content-center">
           <Col lg={6} className="text-center">
             <Card className="shadow-sm">
@@ -31,38 +32,32 @@ const CartPage = () => {
                 <p className="text-muted mb-4">
                   Start adding some delicious coffee to your cart!
                 </p>
-                <Button as={Link} to="/products" variant="primary" size="lg">
+                <Button as={Link} to="/products" variant="primary" size="lg" aria-label="Browse our products">
                   Browse Products
                 </Button>
               </Card.Body>
             </Card>
           </Col>
         </Row>
-      </Container>
+      </PageShell>
     );
   }
 
   return (
-    <Container className="py-5">
-      <Row className="mb-4">
-        <Col>
-          <h1 className="display-5 fw-bold">Shopping Cart</h1>
-          <p className="lead text-muted">{cartCount} {cartCount === 1 ? 'item' : 'items'} in cart</p>
-        </Col>
-      </Row>
-
+    <PageShell title="Shopping Cart" subtitle={`${cartCount} ${cartCount === 1 ? 'item' : 'items'} in cart`}>
       <Row>
         <Col lg={8}>
           <Card className="shadow-sm mb-4">
             <Card.Body>
-              <Table responsive>
+              <Table responsive aria-label="Shopping cart items">
+                <caption className="visually-hidden">Your shopping cart with {cartCount} items</caption>
                 <thead>
                   <tr>
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
-                    <th></th>
+                    <th scope="col">Product</th>
+                    <th scope="col">Price</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Total</th>
+                    <th scope="col"><span className="visually-hidden">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -72,10 +67,11 @@ const CartPage = () => {
                         <div className="d-flex align-items-center">
                           <img
                             src={item.product?.image_url ? `${BACKEND_BASE_URL}${item.product.image_url}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjQwIiB5PSI0MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zNWVtIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj5Db2ZmZWU8L3RleHQ+Cjxzdmc+'}
-                            alt={item.product?.name}
+                            alt={`${item.product?.name} product image`}
                             width="80"
                             height="80"
                             className="me-3 rounded"
+                            loading="lazy"
                           />
                           <div>
                             <h6 className="mb-0">{item.product?.name}</h6>
@@ -89,34 +85,39 @@ const CartPage = () => {
                       </td>
                       <td className="align-middle">₱{item.unit_price}</td>
                       <td className="align-middle">
-                        <div className="d-flex align-items-center gap-2">
+                        <div className="d-flex align-items-center gap-2" role="group" aria-label={`Quantity controls for ${item.product?.name}`}>
                           <Button
                             variant="outline-secondary"
                             size="sm"
                             onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                            aria-label={`Decrease quantity of ${item.product?.name}`}
                           >
-                            <FaMinus />
+                            <FaMinus aria-hidden="true" />
                           </Button>
-                          <span className="px-2">{item.quantity}</span>
+                          <span className="px-2" aria-label={`Quantity: ${item.quantity}`}>{item.quantity}</span>
                           <Button
                             variant="outline-secondary"
                             size="sm"
                             onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                            aria-label={`Increase quantity of ${item.product?.name}`}
                           >
-                            <FaPlus />
+                            <FaPlus aria-hidden="true" />
                           </Button>
                         </div>
                       </td>
                       <td className="align-middle fw-bold">
-                        ₱{(item.unit_price * item.quantity).toFixed(2)}
+                        <data value={(item.unit_price * item.quantity).toFixed(2)} aria-label={`Total: ${(item.unit_price * item.quantity).toFixed(2)} pesos`}>
+                          ₱{(item.unit_price * item.quantity).toFixed(2)}
+                        </data>
                       </td>
                       <td className="align-middle">
                         <Button
                           variant="danger"
                           size="sm"
                           onClick={() => handleRemove(item.id)}
+                          aria-label={`Remove ${item.product?.name} from cart`}
                         >
-                          <FaTrash />
+                          <FaTrash aria-hidden="true" />
                         </Button>
                       </td>
                     </tr>
@@ -162,6 +163,7 @@ const CartPage = () => {
                 to="/products"
                 variant="outline-secondary"
                 className="w-100"
+                aria-label="Continue shopping"
               >
                 Continue Shopping
               </Button>
@@ -169,7 +171,7 @@ const CartPage = () => {
           </Card>
         </Col>
       </Row>
-    </Container>
+    </PageShell>
   );
 };
 

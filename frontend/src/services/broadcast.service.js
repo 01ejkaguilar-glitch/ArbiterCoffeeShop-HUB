@@ -1,9 +1,20 @@
 /**
  * Real-time Broadcasting Service
- * Handles real-time updates using HTTP polling fallback
+ * Handles real-time updates using Laravel Reverb (WebSocket)
+ * Falls back to polling when WebSocket is unavailable.
  */
 
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
 import API_BASE_URL from '../config/api';
+
+// Reverb connection config (read from env, falls back to localhost defaults)
+const REVERB_CONFIG = {
+  key:    process.env.REACT_APP_REVERB_APP_KEY  || 'local',
+  host:   process.env.REACT_APP_REVERB_HOST     || 'localhost',
+  port:   parseInt(process.env.REACT_APP_REVERB_PORT  || '8080', 10),
+  scheme: process.env.REACT_APP_REVERB_SCHEME   || 'http',
+};
 
 class BroadcastService {
   constructor() {
@@ -13,17 +24,43 @@ class BroadcastService {
   }
 
   /**
-   * Initialize the broadcasting service with fallback to polling
+   * Initialize the broadcasting service with Laravel Echo → Reverb
    */
   init() {
     if (this.echo) {
       return this.echo;
     }
 
-    // For development, skip Echo initialization and use polling only
-    console.log('Broadcast service initialized with polling fallback only');
-    this.startPollingFallback();
-    return null;
+    try {
+      // Reverb uses the Pusher protocol — set window.Pusher so Echo can use it
+      window.Pusher = Pusher;
+
+      this.echo = new Echo({
+        broadcaster: 'reverb',
+        key: REVERB_CONFIG.key,
+        wsHost: REVERB_CONFIG.host,
+        wsPort: REVERB_CONFIG.port,
+        wssPort: REVERB_CONFIG.port,
+        scheme: REVERB_CONFIG.scheme,
+        forceTLS: REVERB_CONFIG.scheme === 'https',
+        enabledTransports: ['ws', 'wss'],
+        disableStats: true,
+        auth: {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          },
+        },
+        authEndpoint: `${new URL(API_BASE_URL).origin}/broadcasting/auth`,
+      });
+
+      console.log('Broadcast service initialised with Laravel Reverb (WebSocket)');
+      this.isConnected = true;
+      return this.echo;
+    } catch (error) {
+      console.error('Failed to initialise Reverb Echo, falling back to polling:', error);
+      this.startPollingFallback();
+      return null;
+    }
   }
 
   /**
@@ -59,7 +96,7 @@ class BroadcastService {
       } catch (error) {
         console.log('Polling failed:', error);
       }
-    }, 30000); // Poll every 30 seconds
+    }, 60000); // Poll every 60 seconds
   }
 
   /**
@@ -89,18 +126,52 @@ class BroadcastService {
    * Subscribe to a channel
    */
   subscribe(channelName, eventHandlers = {}) {
-    // Echo is disabled in development, return null to use polling fallback
-    console.log('Broadcast subscription skipped (polling mode):', channelName);
-    return null;
+    if (!this.echo) {
+      console.warn('Echo not initialized, cannot subscribe to channel:', channelName);
+      return null;
+    }
+
+    try {
+      const channel = this.echo.channel(channelName);
+      this.channels.set(channelName, channel);
+
+      // Bind event handlers
+      Object.keys(eventHandlers).forEach(event => {
+        channel.listen(event, eventHandlers[event]);
+      });
+
+      console.log('Subscribed to channel:', channelName);
+      return channel;
+    } catch (error) {
+      console.error('Failed to subscribe to channel:', channelName, error);
+      return null;
+    }
   }
 
   /**
    * Subscribe to a private channel
    */
   subscribePrivate(channelName, eventHandlers = {}) {
-    // Echo is disabled in development, return null to use polling fallback
-    console.log('Broadcast private subscription skipped (polling mode):', channelName);
-    return null;
+    if (!this.echo) {
+      console.warn('Echo not initialized, cannot subscribe to private channel:', channelName);
+      return null;
+    }
+
+    try {
+      const channel = this.echo.private(channelName);
+      this.channels.set(channelName, channel);
+
+      // Bind event handlers
+      Object.keys(eventHandlers).forEach(event => {
+        channel.listen(event, eventHandlers[event]);
+      });
+
+      console.log('Subscribed to private channel:', channelName);
+      return channel;
+    } catch (error) {
+      console.error('Failed to subscribe to private channel:', channelName, error);
+      return null;
+    }
   }
 
   /**
@@ -109,18 +180,16 @@ class BroadcastService {
   unsubscribe(channelName) {
     try {
       if (this.channels.has(channelName)) {
-        const channel = this.channels.get(channelName);
-        if (channel && typeof channel.stopListening === 'function') {
-          // Additional check to ensure channel is valid
-          if (channel.pusher && channel.name) {
-            channel.stopListening();
-          }
+        // Leave the channel properly through Echo
+        if (this.echo && channelName) {
+          this.echo.leave(channelName);
         }
+        
         this.channels.delete(channelName);
       }
     } catch (error) {
       console.warn('Error unsubscribing from channel:', channelName, error);
-      // Force remove from channels map even if stopListening failed
+      // Force remove from channels map even if leaving failed
       this.channels.delete(channelName);
     }
   }

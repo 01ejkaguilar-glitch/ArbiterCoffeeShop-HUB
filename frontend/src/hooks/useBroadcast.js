@@ -11,7 +11,7 @@ export const useBroadcast = (channelName, eventHandlers = {}, isPrivate = false)
   const channelRef = useRef(null);
 
   useEffect(() => {
-    // Initialize broadcast service
+    // Initialize broadcast service (Reverb WebSocket)
     broadcastService.init();
 
     // Subscribe to channel only if channelName is provided
@@ -20,34 +20,43 @@ export const useBroadcast = (channelName, eventHandlers = {}, isPrivate = false)
       channelRef.current = broadcastService[subscribeMethod](channelName, eventHandlers);
     }
 
-    // Check connection status - consider polling as connected
-    const isEchoAvailable = broadcastService.getEcho() && broadcastService.getEcho().connector && broadcastService.getEcho().connector.pusher;
-    setIsConnected(isEchoAvailable ? broadcastService.isConnected : true); // Polling mode is always "connected"
-
-    // Listen for connection changes - only if Echo is available
-    let handleConnected, handleDisconnected;
-    if (broadcastService.getEcho() && broadcastService.getEcho().connector && broadcastService.getEcho().connector.pusher) {
-      handleConnected = () => setIsConnected(true);
-      handleDisconnected = () => setIsConnected(false);
-
-      broadcastService.getEcho().connector.pusher.connection.bind('connected', handleConnected);
-      broadcastService.getEcho().connector.pusher.connection.bind('disconnected', handleDisconnected);
-    }
-
-    // Cleanup function
-    return () => {
-      try {
-        if (channelName && channelRef.current && broadcastService.getEcho()) {
-          broadcastService.unsubscribe(channelName);
-        }
-        if (handleConnected && handleDisconnected && broadcastService.getEcho() && broadcastService.getEcho().connector && broadcastService.getEcho().connector.pusher) {
-          broadcastService.getEcho().connector.pusher.connection.unbind('connected', handleConnected);
-          broadcastService.getEcho().connector.pusher.connection.unbind('disconnected', handleDisconnected);
-        }
-      } catch (error) {
-        console.warn('Error during broadcast cleanup:', error);
-      }
+    // Detect the underlying pusher-protocol socket (works for both Reverb and Pusher)
+    const getPusherSocket = () => {
+      const echo = broadcastService.getEcho();
+      return echo?.connector?.pusher ?? null;
     };
+
+    const pusherSocket = getPusherSocket();
+    if (pusherSocket) {
+      // WebSocket mode — track actual connection state
+      setIsConnected(pusherSocket.connection.state === 'connected');
+
+      const handleConnected    = () => setIsConnected(true);
+      const handleDisconnected = () => setIsConnected(false);
+      pusherSocket.connection.bind('connected',    handleConnected);
+      pusherSocket.connection.bind('disconnected', handleDisconnected);
+
+      return () => {
+        try {
+          if (channelName && broadcastService.getEcho()) broadcastService.unsubscribe(channelName);
+          pusherSocket.connection.unbind('connected',    handleConnected);
+          pusherSocket.connection.unbind('disconnected', handleDisconnected);
+        } catch (err) {
+          console.warn('Error during broadcast cleanup:', err);
+        }
+      };
+    } else {
+      // Polling fallback mode — treat as always "connected" (polling is active)
+      setIsConnected(true);
+      return () => {
+        try {
+          if (channelName && broadcastService.getEcho()) broadcastService.unsubscribe(channelName);
+        } catch (err) {
+          console.warn('Error during broadcast cleanup:', err);
+        }
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelName, isPrivate]);
 
   return {
@@ -96,7 +105,7 @@ export const useBaristaOrders = (onNewOrder) => {
   const eventHandlers = {
     'order.created': (event) => {
       console.log('New order for barista:', event);
-      setPendingOrders(prev => [...prev, event.order]);
+      setPendingOrders(prev => [...prev, event.order].slice(-50));
       if (onNewOrder) {
         onNewOrder(event.order);
       }
@@ -125,6 +134,66 @@ export const useInventoryAlerts = (onLowStock) => {
   };
 
   const { isConnected } = useBroadcast('inventory-alerts', eventHandlers);
+
+  return { isConnected };
+};
+
+/**
+ * Hook for real-time kitchen order notifications
+ */
+export const useKitchenOrders = (onNewOrder) => {
+  const [pendingOrders, setPendingOrders] = useState([]);
+
+  const eventHandlers = {
+    'order.created': (event) => {
+      console.log('New food order for kitchen:', event);
+      setPendingOrders(prev => [...prev, event.order].slice(-50));
+      if (onNewOrder) {
+        onNewOrder(event.order);
+      }
+    }
+  };
+
+  const { isConnected } = useBroadcast('kitchen-orders', eventHandlers);
+
+  return {
+    isConnected,
+    pendingOrders
+  };
+};
+
+/**
+ * Hook for real-time task assignment notifications
+ */
+export const useTaskAssignments = (onTaskAssigned) => {
+  const eventHandlers = {
+    'task.assigned': (event) => {
+      console.log('Task assigned:', event);
+      if (onTaskAssigned) {
+        onTaskAssigned(event);
+      }
+    }
+  };
+
+  const { isConnected } = useBroadcast('tasks', eventHandlers);
+
+  return { isConnected };
+};
+
+/**
+ * Hook for real-time shift notifications
+ */
+export const useShiftNotifications = (onShiftStarted) => {
+  const eventHandlers = {
+    'shift.started': (event) => {
+      console.log('Shift started:', event);
+      if (onShiftStarted) {
+        onShiftStarted(event);
+      }
+    }
+  };
+
+  const { isConnected } = useBroadcast('shifts', eventHandlers);
 
   return { isConnected };
 };

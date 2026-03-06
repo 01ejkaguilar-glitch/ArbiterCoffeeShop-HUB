@@ -3,6 +3,8 @@ import { Container, Row, Col, Form, Button, Card, Alert, ListGroup } from 'react
 import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock, FaFacebookF, FaTwitter, FaInstagram } from 'react-icons/fa';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
+import SEO from '../../components/SEO';
+import { BreadcrumbSchema } from '../../components/StructuredData';
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -79,7 +81,25 @@ const ContactPage = () => {
   };
 
   return (
+    <main role="main">
     <Container className="py-5">
+      <SEO 
+        title="Contact Us - Get in Touch"
+        description="Have questions about Arbiter Coffee? Contact us for inquiries about our products, services, operating hours, or feedback. We're here to help!"
+        keywords="contact Arbiter Coffee, coffee shop location, coffee shop hours, contact us, customer service, coffee inquiries"
+        url="/contact"
+        canonical={`${window.location.origin}/contact`}
+        type="website"
+      />
+      
+      <BreadcrumbSchema 
+        items={[
+          { name: 'Home', url: '/' },
+          { name: 'Contact Us', url: '/contact' }
+        ]}
+      />
+      
+      <header>
       <Row className="mb-5">
         <Col lg={8} className="mx-auto text-center">
           <h1 className="display-4 fw-bold mb-3">Contact Us</h1>
@@ -88,105 +108,124 @@ const ContactPage = () => {
           </p>
         </Col>
       </Row>
+      </header>
 
       <Row className="g-4">
         <Col lg={8}>
+          <section aria-labelledby="contact-form-heading">
           <Card className="shadow-sm">
             <Card.Body className="p-4">
-              <h3 className="mb-4">Send us a Message</h3>
+              <h2 id="contact-form-heading" className="h3 mb-4">Send us a Message</h2>
 
               {success && (
-                <Alert variant="success" onClose={() => setSuccess(false)} dismissible>
+                <Alert variant="success" onClose={() => setSuccess(false)} dismissible role="alert">
                   Thank you for your message! We'll get back to you soon.
                 </Alert>
               )}
 
               {error && (
-                <Alert variant="danger" onClose={() => setError('')} dismissible>
+                <Alert variant="danger" onClose={() => setError('')} dismissible role="alert">
                   {error}
                 </Alert>
               )}
 
-              <Form onSubmit={handleSubmit}>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Full Name *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                        placeholder="Enter your name"
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Email Address *</Form.Label>
-                      <Form.Control
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        placeholder="your@email.com"
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
+              <Form onSubmit={handleSubmit} aria-labelledby="contact-form-heading" noValidate>
+                <fieldset className="border-0 p-0">
+                  <legend className="visually-hidden">Contact Information</legend>
+                  
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label htmlFor="contact-name">Full Name <span aria-label="required">*</span></Form.Label>
+                        <Form.Control
+                          id="contact-name"
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          required
+                          placeholder="Enter your name"
+                          aria-required="true"
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label htmlFor="contact-email">Email Address <span aria-label="required">*</span></Form.Label>
+                        <Form.Control
+                          id="contact-email"
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                          placeholder="your@email.com"
+                          aria-required="true"
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
 
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Phone Number</Form.Label>
-                      <Form.Control
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder="+63 912 345 6789"
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label htmlFor="contact-phone">Phone Number</Form.Label>
+                        <Form.Control
+                          id="contact-phone"
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          placeholder="+63 912 345 6789"
+                        />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                </fieldset>
 
-                <Row>
+                <fieldset className="border-0 p-0">
+                  <legend className="visually-hidden">Inquiry Details</legend>
+                  
+                  <Row>
+                    <Col md={6}>
+                      <Form.Group className="mb-3">
+                        <Form.Label htmlFor="inquiry-type">Inquiry Type <span aria-label="required">*</span></Form.Label>
+                        <Form.Select
+                          id="inquiry-type"
+                          name="inquiry_type"
+                          value={formData.inquiry_type}
+                          onChange={handleChange}
+                          required
+                          aria-required="true"
+                        >
+                          <option value="general">General Inquiry</option>
+                          <option value="catering">Catering Services</option>
+                          <option value="training">Barista Training</option>
+                          <option value="feedback">Feedback</option>
+                        </Form.Select>
+                      </Form.Group>
+                    </Col>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Inquiry Type *</Form.Label>
-                      <Form.Select
-                        name="inquiry_type"
-                        value={formData.inquiry_type}
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="general">General Inquiry</option>
-                        <option value="catering">Catering Services</option>
-                        <option value="training">Barista Training</option>
-                        <option value="feedback">Feedback</option>
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Subject *</Form.Label>
+                      <Form.Label htmlFor="contact-subject">Subject <span aria-label="required">*</span></Form.Label>
                       <Form.Control
+                        id="contact-subject"
                         type="text"
                         name="subject"
                         value={formData.subject}
                         onChange={handleChange}
                         required
                         placeholder="What is this about?"
+                        aria-required="true"
                       />
                     </Form.Group>
                   </Col>
                 </Row>
 
                 <Form.Group className="mb-4">
-                  <Form.Label>Message *</Form.Label>
+                  <Form.Label htmlFor="contact-message">Message <span aria-label="required">*</span></Form.Label>
                   <Form.Control
+                    id="contact-message"
                     as="textarea"
                     rows={5}
                     name="message"
@@ -194,8 +233,10 @@ const ContactPage = () => {
                     onChange={handleChange}
                     required
                     placeholder="Tell us more..."
+                    aria-required="true"
                   />
                 </Form.Group>
+                </fieldset>
 
                 <Button type="submit" variant="primary" size="lg" disabled={loading}>
                   {loading ? 'Sending...' : 'Send Message'}
@@ -203,6 +244,7 @@ const ContactPage = () => {
               </Form>
             </Card.Body>
           </Card>
+          </section>
         </Col>
 
         <Col lg={4}>
@@ -292,8 +334,7 @@ const ContactPage = () => {
                   href={contactInfo?.social_media?.facebook || 'https://www.facebook.com/profile.php?id=100085413528378'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-outline-primary rounded-circle p-2"
-                  style={{ width: '40px', height: '40px' }}
+                  className="btn btn-outline-primary rounded-circle p-2 social-icon"
                   title="Facebook"
                 >
                   <FaFacebookF />
@@ -302,8 +343,7 @@ const ContactPage = () => {
                   href={contactInfo?.social_media?.instagram || 'https://instagram.com/arbitercoffee.ph'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-outline-danger rounded-circle p-2"
-                  style={{ width: '40px', height: '40px' }}
+                  className="btn btn-outline-danger rounded-circle p-2 social-icon"
                   title="Instagram"
                 >
                   <FaInstagram />
@@ -313,11 +353,10 @@ const ContactPage = () => {
                     href={contactInfo.social_media.tiktok}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn btn-outline-dark rounded-circle p-2"
-                    style={{ width: '40px', height: '40px' }}
+                    className="btn btn-outline-dark rounded-circle p-2 social-icon"
                     title="TikTok"
                   >
-                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>♪</span>
+                    <span className="fw-bold" style={{ fontSize: '1.1rem' }}>&#9834;</span>
                   </a>
                 )}
               </div>
@@ -331,23 +370,41 @@ const ContactPage = () => {
         <Row className="mt-5">
           <Col>
             <Card className="shadow-sm">
+              <Card.Header className="bg-white">
+                <h5 className="mb-0">
+                  <FaMapMarkerAlt className="text-primary me-2" />
+                  Find Us on the Map
+                </h5>
+              </Card.Header>
               <Card.Body className="p-0">
                 <iframe
                   title="Arbiter Coffee Location"
-                  src={`https://www.google.com/maps?q=${contactInfo.map_coordinates.latitude},${contactInfo.map_coordinates.longitude}&hl=es;z=14&output=embed`}
+                  src={`https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1000!2d${contactInfo.map_coordinates.longitude}!3d${contactInfo.map_coordinates.latitude}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sph!4v1`}
                   width="100%"
-                  height="400"
+                  height="450"
                   style={{ border: 0 }}
                   allowFullScreen=""
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                 ></iframe>
               </Card.Body>
+              <Card.Footer className="bg-white text-center">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${contactInfo.map_coordinates.latitude},${contactInfo.map_coordinates.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary btn-sm"
+                >
+                  <FaMapMarkerAlt className="me-2" />
+                  Get Directions
+                </a>
+              </Card.Footer>
             </Card>
           </Col>
         </Row>
       )}
     </Container>
+    </main>
   );
 };
 

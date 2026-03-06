@@ -1,0 +1,380 @@
+/* ============================================================
+   TrainingInsights.css  –  ti-* design system
+   ============================================================ */
+
+/* ── Page shell ─────────────────────────────────────────────── */
+.ti-page {
+  padding: 24px 28px;
+  min-height: 100vh;
+  background: #f5f6fa;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────── */
+.ti-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.ti-topbar-title h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+.ti-topbar-title p {
+  margin: 2px 0 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.ti-period-select {
+  padding: 8px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.ti-period-select:focus {
+  border-color: var(--color-dark-green);
+}
+
+/* ── Stat cards row ─────────────────────────────────────────── */
+.ti-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+@media (max-width: 992px) { .ti-stats { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 576px)  { .ti-stats { grid-template-columns: 1fr; } }
+
+.ti-stat-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  border: 1.5px solid #f0f0f5;
+  text-align: center;
+}
+.ti-stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  margin-bottom: 6px;
+}
+.ti-stat-icon.purple { background: var(--color-success-bg); color: var(--color-dark-green); }
+.ti-stat-icon.green  { background: #dcfce7; color: #16a34a; }
+.ti-stat-icon.blue   { background: var(--color-success-bg); color: var(--color-dark-green); }
+.ti-stat-icon.amber  { background: #fef3c7; color: #d97706; }
+
+.ti-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1A1A1A;
+  line-height: 1;
+}
+.ti-stat-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+.ti-stat-badge {
+  margin-top: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.ti-stat-badge.success { background: #dcfce7; color: #15803d; }
+.ti-stat-badge.info    { background: var(--color-success-bg); color: #15803d; }
+.ti-stat-badge.warning { background: #fef3c7; color: #b45309; }
+.ti-stat-badge.danger  { background: #fee2e2; color: #b91c1c; }
+.ti-stat-badge.secondary { background: #f3f4f6; color: #6b7280; }
+
+.ti-stars {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  margin-top: 2px;
+}
+.ti-stars svg.filled { color: #f59e0b; }
+.ti-stars svg.empty  { color: #d1d5db; }
+
+/* ── Main content grid ──────────────────────────────────────── */
+.ti-content {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+@media (max-width: 992px) { .ti-content { grid-template-columns: 1fr; } }
+
+/* ── Section card ───────────────────────────────────────────── */
+.ti-section {
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid #f0f0f5;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  overflow: hidden;
+}
+.ti-section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+.ti-section-hdr svg { color: var(--color-dark-green); }
+.ti-section-body {
+  padding: 20px;
+}
+
+/* ── Progress metric rows ───────────────────────────────────── */
+.ti-metric {
+  margin-bottom: 20px;
+}
+.ti-metric:last-child { margin-bottom: 0; }
+.ti-metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  color: #374151;
+}
+.ti-metric-label { font-weight: 500; }
+.ti-metric-value { font-weight: 700; color: #1A1A1A; }
+.ti-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  overflow: hidden;
+}
+.ti-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+.ti-fill.green  { background: linear-gradient(90deg, #4ade80, #16a34a); }
+.ti-fill.blue   { background: linear-gradient(90deg, var(--color-medium-green), var(--color-dark-green)); }
+.ti-fill.amber  { background: linear-gradient(90deg, #fbbf24, #d97706); }
+.ti-fill.purple { background: linear-gradient(90deg, #b45309, #92400e); }
+
+/* ── Side column ────────────────────────────────────────────── */
+.ti-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Task list ──────────────────────────────────────────────── */
+.ti-task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ti-task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f9fafb;
+  border: 1px solid #f0f0f5;
+}
+.ti-task-item.done {
+  opacity: 0.6;
+}
+.ti-task-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+.ti-task-checkbox.checked {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+  font-size: 10px;
+}
+.ti-task-info { flex: 1; min-width: 0; }
+.ti-task-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ti-task-name.done { text-decoration: line-through; color: #9ca3af; }
+.ti-task-meta {
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ti-priority {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ti-priority.high   { background: #fee2e2; color: #b91c1c; }
+.ti-priority.medium { background: #fef3c7; color: #b45309; }
+.ti-priority.low    { background: #dcfce7; color: #15803d; }
+
+.ti-task-empty {
+  text-align: center;
+  padding: 20px 10px;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+/* ── Shift card ─────────────────────────────────────────────── */
+.ti-shift-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+.ti-shift-row:last-child { border-bottom: none; }
+.ti-shift-key { color: #6b7280; font-weight: 500; }
+.ti-shift-val { color: #1f2937; font-weight: 600; }
+
+.ti-no-shift {
+  text-align: center;
+  padding: 16px 0;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+/* ── Achievements row ───────────────────────────────────────── */
+.ti-achievements {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 8px;
+}
+@media (max-width: 576px) { .ti-achievements { grid-template-columns: 1fr; } }
+
+.ti-badge-card {
+  border-radius: 12px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  border: 1.5px solid #f0f0f5;
+  background: #fafafa;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.ti-badge-card.unlocked {
+  background: #fff;
+  border-color: #c8e6c9;
+  box-shadow: 0 2px 8px rgba(0, 104, 55, .08);
+}
+.ti-badge-card.unlocked:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 104, 55, .15);
+}
+.ti-badge-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+.ti-badge-card.locked .ti-badge-icon {
+  background: #f3f4f6;
+  color: #d1d5db;
+}
+.ti-badge-card.unlocked.purple .ti-badge-icon { background: var(--color-success-bg); color: var(--color-dark-green); }
+.ti-badge-card.unlocked.green  .ti-badge-icon { background: #dcfce7; color: #16a34a; }
+.ti-badge-card.unlocked.blue   .ti-badge-icon { background: var(--color-success-bg); color: var(--color-dark-green); }
+.ti-badge-card.unlocked.amber  .ti-badge-icon { background: #fef3c7; color: #d97706; }
+
+.ti-badge-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+.ti-badge-card.locked .ti-badge-name { color: #9ca3af; }
+.ti-badge-desc {
+  font-size: 0.73rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+.ti-locked-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #9ca3af;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* ── Loader / Error ─────────────────────────────────────────── */
+.ti-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 340px;
+  gap: 14px;
+  color: #6b7280;
+}
+.ti-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--color-dark-green);
+  border-radius: 50%;
+  animation: ti-spin 0.75s linear infinite;
+}
+@keyframes ti-spin { to { transform: rotate(360deg); } }
+
+.ti-error {
+  margin: 24px;
+  background: #fff7ed;
+  border: 1.5px solid #fed7aa;
+  border-radius: 14px;
+  padding: 24px;
+  color: #9a3412;
+}
+.ti-error h3 { margin: 0 0 8px; font-size: 1rem; }
+.ti-error p  { margin: 0; font-size: 0.875rem; }

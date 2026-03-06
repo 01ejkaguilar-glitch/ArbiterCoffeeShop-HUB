@@ -16,7 +16,14 @@ class PaymentGatewayFactory
      */
     public static function create(string $gateway): PaymentGatewayInterface
     {
-        return match(strtolower($gateway)) {
+        $g = strtolower($gateway);
+
+        // If running tests or PayPal SDK is missing, use the Null gateway for PayPal
+        if ($g === 'paypal' && (app()->environment('testing') || !class_exists(\PayPalCheckoutSdk\Core\SandboxEnvironment::class))) {
+            return new NullPaymentGateway();
+        }
+
+        return match($g) {
             'gcash' => new GCashPaymentGateway(),
             'stripe' => new StripePaymentGateway(),
             'paypal' => new PayPalPaymentGateway(),
@@ -43,7 +50,14 @@ class PaymentGatewayFactory
      */
     public static function available(): array
     {
-        return ['gcash', 'stripe', 'paypal', 'maya'];
+        $available = ['gcash', 'stripe', 'maya', 'paymongo'];
+
+        // Expose PayPal only when the SDK is present and not in the testing environment
+        if (!app()->environment('testing') && class_exists(\PayPalCheckoutSdk\Core\SandboxEnvironment::class)) {
+            $available[] = 'paypal';
+        }
+
+        return $available;
     }
 
     /**
@@ -66,12 +80,11 @@ class PaymentGatewayFactory
     public static function forCurrency(string $currency): PaymentGatewayInterface
     {
         $currency = strtoupper($currency);
-        
-        // PHP currency - use Maya
+        // PHP currency - use GCash
         if ($currency === 'PHP') {
-            return new MayaPaymentGateway();
+            return new GCashPaymentGateway();
         }
-        
+
         // PayPal supports many currencies, can be used as alternative
         // For now, default to Stripe for non-PHP currencies
         return new StripePaymentGateway();

@@ -226,6 +226,40 @@ class ShiftController extends BaseController
     }
 
     /**
+     * Get the authenticated barista's own shifts
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getMyShifts(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $employee = Employee::where('user_id', $user->id)->first();
+
+            if (!$employee) {
+                return $this->sendError('Employee record not found', 404);
+            }
+
+            $query = Shift::where('employee_id', $employee->id);
+
+            // Optional month/year filter
+            if ($request->has('month') && $request->has('year')) {
+                $query->whereMonth('date', $request->input('month'))
+                      ->whereYear('date', $request->input('year'));
+            }
+
+            $shifts = $query->orderBy('date', 'asc')
+                            ->orderBy('start_time', 'asc')
+                            ->get();
+
+            return $this->sendResponse($shifts, 'My shifts retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to retrieve shifts', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Get employee upcoming shifts
      *
      * @param int $employeeId

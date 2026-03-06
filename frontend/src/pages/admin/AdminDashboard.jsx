@@ -1,13 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Container, Row, Col, Card, Table, Badge, Alert } from 'react-bootstrap';
-import { FaShoppingBag, FaUsers, FaChartLine, FaBoxes, FaWifi, FaExclamationTriangle, FaBell } from 'react-icons/fa';
+import { Row, Col, Card, Badge, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { FaShoppingBag, FaUsers, FaBoxes, FaUserCheck, FaUserClock, FaDollarSign, FaBell, FaChartLine, FaArrowRight } from 'react-icons/fa';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
-import { AutoRefreshControls } from '../../hooks/useAutoRefresh';
 import { useBaristaOrders, useInventoryAlerts } from '../../hooks/useBroadcast';
 import { useNotificationSystem } from '../../components/common/NotificationSystem';
-import Loading from '../../components/common/Loading';
+import PageShell from '../../components/layout/PageShell';
+import DashboardStatGrid from '../../components/dashboard/DashboardStatGrid';
+import ConnectionStatus from '../../components/common/ConnectionStatus';
+import '../../components/dashboard/EnhancedStatCard.css';
+import '../../styles/admin.css';
+import AdminChartSection from './components/AdminChartSection';
+import AdminRecentOrders from './components/AdminRecentOrders';
 
 const AdminDashboard = () => {
   const { showSuccessNotification, showLowStockAlert } = useNotificationSystem();
@@ -27,10 +32,10 @@ const AdminDashboard = () => {
 
   // Dashboard data state
   const [dashboardData, setDashboardData] = useState(null);
+  const [workforceData, setWorkforceData] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastRefresh, setLastRefresh] = useState(null);
-  const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(false);
 
   // Fetch dashboard data function
   const fetchDashboardData = useCallback(async (showLoading = true) => {
@@ -38,13 +43,39 @@ const AdminDashboard = () => {
       if (showLoading) setLoading(true);
       setError(null);
 
-      const response = await apiService.get(API_ENDPOINTS.ADMIN.DASHBOARD_STATS);
-      if (response.success) {
-        setDashboardData(response.data);
-        setLastRefresh(new Date());
-      } else {
-        throw new Error('Failed to fetch dashboard data');
+      // Fetch main dashboard data
+      const dashboardResponse = await apiService.get(API_ENDPOINTS.ADMIN.DASHBOARD_STATS);
+      if (dashboardResponse.success) {
+        setDashboardData(dashboardResponse.data);
       }
+
+      // Fetch analytics data (real sales + category breakdown)
+      try {
+        const analyticsResponse = await apiService.get(API_ENDPOINTS.ADMIN.ANALYTICS.SALES);
+        if (analyticsResponse.success) {
+          setAnalyticsData(analyticsResponse.data);
+        }
+      } catch (analyticsError) {
+        console.warn('Failed to fetch analytics data:', analyticsError);
+      }
+
+      // Fetch workforce data
+      try {
+        const [employeeStatsResponse, attendanceSummaryResponse] = await Promise.all([
+          apiService.get(API_ENDPOINTS.WORKFORCE.EMPLOYEE_STATS),
+          apiService.get(API_ENDPOINTS.WORKFORCE.ATTENDANCE_SUMMARY)
+        ]);
+
+        setWorkforceData({
+          employeeStats: employeeStatsResponse.success ? employeeStatsResponse.data : null,
+          attendanceSummary: attendanceSummaryResponse.success ? attendanceSummaryResponse.data : null
+        });
+      } catch (workforceError) {
+        console.warn('Failed to fetch workforce data:', workforceError);
+        // Don't fail the whole dashboard if workforce data fails
+        setWorkforceData(null);
+      }
+
     } catch (err) {
       setError(err.message || 'Failed to fetch dashboard data');
       console.error('Dashboard fetch error:', err);
@@ -58,16 +89,6 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Manual refresh function
-  const refresh = useCallback(() => {
-    fetchDashboardData(true);
-  }, [fetchDashboardData]);
-
-  // Toggle auto-refresh (disabled for now)
-  const toggleAutoRefresh = useCallback(() => {
-    setIsAutoRefreshEnabled(prev => !prev);
-  }, []);
-
   const stats = dashboardData?.stats || {
     totalOrders: 0,
     totalUsers: 0,
@@ -75,262 +96,124 @@ const AdminDashboard = () => {
     totalRevenue: 0
   };
 
-  const recentOrders = dashboardData?.recentOrders || [];
-
-  const getStatusBadge = (status) => {
-    const statusColors = {
-      pending: 'warning',
-      confirmed: 'info',
-      preparing: 'primary',
-      ready: 'success',
-      completed: 'success',
-      cancelled: 'danger'
-    };
-    return <Badge bg={statusColors[status] || 'secondary'}>{status}</Badge>;
+  const workforceStats = workforceData?.employeeStats || {
+    total: 0,
+    active: 0,
+    on_leave: 0,
+    new_hires: 0
   };
 
-  if (loading) {
-    return <Loading message="Loading dashboard..." />;
-  }
+  // Map backend field names to frontend expectations
+  const mappedWorkforceStats = workforceData?.employeeStats ? {
+    total: workforceData.employeeStats.total_employees || 0,
+    active: workforceData.employeeStats.active_employees || 0,
+    on_leave: workforceData.employeeStats.on_leave || 0,
+    new_hires: 0 // This would need a separate calculation
+  } : workforceStats;
+
+  const attendanceStats = workforceData?.attendanceSummary || {
+    present_today: 0,
+    absent_today: 0,
+    late_today: 0,
+    total_employees: 0
+  };
+
+  const recentOrders = dashboardData?.recentOrders || [];
+
+  // Calculate trends (mock data - would come from API in production)
+  const ordersTrend = 12;
+  const revenueTrend = 15;
+
+  // Greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
 
   return (
-    <Container className="py-5">
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <h1 className="display-5 fw-bold">Admin Dashboard</h1>
-              <p className="lead text-muted">Manage your coffee shop</p>
-            </div>
-            <div className="d-flex align-items-center gap-3">
-              {/* Real-time connection status */}
-              <div className="d-flex align-items-center">
-                {ordersConnected ? (
-                  <FaWifi className="text-success me-2" />
-                ) : (
-                  <FaExclamationTriangle className="text-warning me-2" />
-                )}
-                <small className={ordersConnected ? 'text-success' : 'text-warning'}>
-                  {ordersConnected ? 'Live' : 'Offline'}
-                </small>
-              </div>
+    <PageShell
+      title={`${getGreeting()}, Admin`}
+      subtitle={todayDate}
+      loading={loading}
+      headerRight={
+        <>
+          <ConnectionStatus isConnected={ordersConnected} pendingCount={pendingOrders.length} />
+          {pendingOrders.length > 0 && (
+            <span className="d-flex align-items-center gap-1 text-warning">
+              <FaBell />
+              <Badge bg="warning" text="dark">{pendingOrders.length} pending</Badge>
+            </span>
+          )}
+        </>
+      }
+      error={error}
+      onRetry={() => fetchDashboardData()}
+    >
 
-              {/* Pending orders indicator */}
-              {pendingOrders.length > 0 && (
-                <div className="d-flex align-items-center">
-                  <FaBell className="text-warning me-2" />
-                  <Badge bg="warning">{pendingOrders.length} new orders</Badge>
-                </div>
-              )}
+      {/* KPI Stats */}
+      <div className="dashboard-section-label">Overview</div>
+      <DashboardStatGrid
+        stats={[
+          { title: 'Total Orders', value: stats.totalOrders, icon: FaShoppingBag, iconColor: 'primary', trend: ordersTrend, trendLabel: 'vs last week' },
+          { title: 'Total Revenue', value: stats.totalRevenue, prefix: '₱', icon: FaDollarSign, iconColor: 'warning', trend: revenueTrend, trendLabel: 'vs last week' },
+          { title: 'Total Users', value: stats.totalUsers, icon: FaUsers, iconColor: 'success', trendLabel: 'registered users' },
+          { title: 'Total Products', value: stats.totalProducts, icon: FaBoxes, iconColor: 'info', trendLabel: 'in catalog' },
+        ]}
+      />
 
-              {/* Auto-refresh controls */}
-              <AutoRefreshControls
-                loading={loading}
-                lastRefresh={lastRefresh}
-                isAutoRefreshEnabled={isAutoRefreshEnabled}
-                onRefresh={refresh}
-                onToggleAutoRefresh={toggleAutoRefresh}
-              />
-            </div>
-          </div>
-        </Col>
-      </Row>
-
-      {/* Error message */}
-      {error && (
-        <Row className="mb-3">
-          <Col>
-            <Alert variant="danger">
-              {error}
-            </Alert>
-          </Col>
-        </Row>
-      )}
-
+      {/* Operational Row: Recent Orders + Workforce */}
       <Row className="g-4 mb-5">
-        <Col md={6} lg={3}>
-          <Card className="shadow-sm border-0 h-100">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p className="text-muted mb-1">Total Orders</p>
-                  <h3 className="mb-0">{stats.totalOrders}</h3>
+        <Col lg={8}>
+          <AdminRecentOrders orders={recentOrders} />
+        </Col>
+        <Col lg={4}>
+          <Card className="admin-card h-100">
+            <Card.Header className="d-flex justify-content-between align-items-center">
+              <div className="d-flex align-items-center gap-2">
+                <div className="dashboard-section-icon bg-info-soft">
+                  <FaUsers className="text-info" />
                 </div>
-                <FaShoppingBag size={40} className="text-primary" />
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card className="shadow-sm border-0 h-100">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
                 <div>
-                  <p className="text-muted mb-1">Total Users</p>
-                  <h3 className="mb-0">{stats.totalUsers}</h3>
+                  <h5 className="mb-0 fw-semibold">Workforce Today</h5>
+                  <small className="text-muted">Staff status at a glance</small>
                 </div>
-                <FaUsers size={40} className="text-success" />
               </div>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card className="shadow-sm border-0 h-100">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p className="text-muted mb-1">Total Products</p>
-                  <h3 className="mb-0">{stats.totalProducts}</h3>
-                </div>
-                <FaBoxes size={40} className="text-info" />
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card className="shadow-sm border-0 h-100">
-            <Card.Body>
-              <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <p className="text-muted mb-1">Revenue</p>
-                  <h3 className="mb-0">₱{stats.totalRevenue.toLocaleString()}</h3>
-                </div>
-                <FaChartLine size={40} className="text-warning" />
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row className="g-4 mb-4">
-        <Col md={6} lg={3}>
-          <Card as={Link} to="/admin/products" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaBoxes size={48} className="text-primary mb-3" />
-              <Card.Title>Products</Card.Title>
-              <Card.Text className="text-muted">
-                Manage product catalog
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card as={Link} to="/admin/orders" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaShoppingBag size={48} className="text-success mb-3" />
-              <Card.Title>Orders</Card.Title>
-              <Card.Text className="text-muted">
-                View and manage orders
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card as={Link} to="/admin/users" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaUsers size={48} className="text-info mb-3" />
-              <Card.Title>Users</Card.Title>
-              <Card.Text className="text-muted">
-                Manage user accounts
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={3}>
-          <Card as={Link} to="/admin/analytics" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaChartLine size={48} className="text-warning mb-3" />
-              <Card.Title>Analytics</Card.Title>
-              <Card.Text className="text-muted">
-                View business analytics
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row className="g-4">
-        <Col md={6} lg={4}>
-          <Card as={Link} to="/admin/inventory" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaBoxes size={48} className="text-secondary mb-3" />
-              <Card.Title>Inventory</Card.Title>
-              <Card.Text className="text-muted">
-                Manage stock levels
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={4}>
-          <Card as={Link} to="/admin/coffee-beans" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaBoxes size={48} className="text-brown mb-3" />
-              <Card.Title>Coffee Beans</Card.Title>
-              <Card.Text className="text-muted">
-                Manage coffee inventory
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col md={6} lg={4}>
-          <Card as={Link} to="/admin/reports" className="text-decoration-none h-100 border-0 shadow-sm">
-            <Card.Body className="text-center p-4">
-              <FaChartLine size={48} className="text-success mb-3" />
-              <Card.Title>Reports</Card.Title>
-              <Card.Text className="text-muted">
-                View comprehensive reports
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row>
-        <Col>
-          <Card className="shadow-sm">
-            <Card.Header className="bg-primary text-white">
-              <h5 className="mb-0">Recent Orders</h5>
+              <Button as={Link} to="/admin/employees" variant="outline-secondary" size="sm" className="d-flex align-items-center gap-1">
+                View <FaArrowRight size={12} />
+              </Button>
             </Card.Header>
-            <Card.Body>
-              {recentOrders.length > 0 ? (
-                <Table responsive hover>
-                  <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Customer</th>
-                      <th>Date</th>
-                      <th>Total</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentOrders.map((order) => (
-                      <tr key={order.id}>
-                        <td>#{order.order_number || order.id}</td>
-                        <td>{order.customer?.name || order.customer_name || 'N/A'}</td>
-                        <td>{new Date(order.created_at).toLocaleDateString()}</td>
-                        <td>₱{parseFloat(order.total_amount || 0).toFixed(2)}</td>
-                        <td>{getStatusBadge(order.status)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              ) : (
-                <p className="text-center text-muted py-4">No recent orders</p>
-              )}
+            <Card.Body className="p-0">
+              <div className="workforce-stat-list">
+                {[
+                  { label: 'Total Employees', value: mappedWorkforceStats.total, icon: FaUsers, color: 'info' },
+                  { label: 'Present Today', value: attendanceStats.present_today, icon: FaUserCheck, color: 'success' },
+                  { label: 'On Leave', value: mappedWorkforceStats.on_leave, icon: FaUserClock, color: 'warning' },
+                  { label: 'Absent Today', value: attendanceStats.absent_today, icon: FaUserClock, color: 'danger' },
+                ].map((item, idx) => (
+                  <div key={idx} className="workforce-stat-item">
+                    <div className={`workforce-stat-icon bg-${item.color}-soft`}>
+                      <item.icon size={14} className={`text-${item.color}`} />
+                    </div>
+                    <span className="workforce-stat-label">{item.label}</span>
+                    <span className="workforce-stat-value">{item.value}</span>
+                  </div>
+                ))}
+              </div>
             </Card.Body>
           </Card>
         </Col>
       </Row>
-    </Container>
+
+      {/* Analytics */}
+      <div className="dashboard-section-label"><FaChartLine className="me-2" />Analytics</div>
+      <AdminChartSection stats={stats} analyticsData={analyticsData} />
+    </PageShell>
   );
 };
 

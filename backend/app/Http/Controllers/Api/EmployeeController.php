@@ -140,11 +140,12 @@ class EmployeeController extends BaseController
     {
         try {
             $request->validate([
-                'position' => 'string|max:100',
-                'department' => 'nullable|string|max:100',
-                'salary' => 'nullable|numeric|min:0',
-                'status' => 'in:active,on_leave,suspended,terminated',
-                'emergency_contact_name' => 'nullable|string|max:255',
+                'position'                => 'string|max:100',
+                'department'              => 'nullable|string|max:100',
+                'salary'                  => 'nullable|numeric|min:0',
+                'hire_date'               => 'nullable|date',
+                'status'                  => 'in:active,on_leave,suspended,terminated,inactive',
+                'emergency_contact_name'  => 'nullable|string|max:255',
                 'emergency_contact_phone' => 'nullable|string|max:20',
             ]);
 
@@ -154,6 +155,7 @@ class EmployeeController extends BaseController
             $employee->update($request->only([
                 'position',
                 'department',
+                'hire_date',
                 'salary',
                 'status',
                 'emergency_contact_name',
@@ -161,8 +163,8 @@ class EmployeeController extends BaseController
             ]));
 
             // Update user info if provided
-            if ($request->has('name') || $request->has('phone')) {
-                $employee->user->update($request->only(['name', 'phone']));
+            if ($request->has('name') || $request->has('phone') || $request->has('email')) {
+                $employee->user->update($request->only(['name', 'phone', 'email']));
             }
 
             DB::commit();

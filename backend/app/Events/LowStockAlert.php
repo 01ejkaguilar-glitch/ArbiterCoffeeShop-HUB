@@ -31,7 +31,7 @@ class LowStockAlert implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('manager-alerts'),
+            new Channel('inventory-alerts'),
         ];
     }
 

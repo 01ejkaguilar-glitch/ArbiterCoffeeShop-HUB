@@ -6,21 +6,48 @@ use App\Http\Controllers\Api\BaseController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 class ProductController extends BaseController
 {
+    // Cache TTL in seconds
+    const CACHE_TTL = 300; // 5 minutes
+    const CACHE_TAG = 'products';
+    
     /**
-     * Clear the products API cache
+     * Clear the products cache (without tags for database cache compatibility).
+     * Tracks cache keys in a registry so we can forget them specifically
+     * instead of flushing the entire application cache.
      */
     private function clearProductsCache()
     {
-        // Generate the same cache key as the CacheResponse middleware
-        $url = 'http://localhost:8000/api/v1/products';
-        $queryParams = [];
-        ksort($queryParams);
-        $cacheKey = 'api_cache:' . md5($url . serialize($queryParams));
-        
-        \Cache::forget($cacheKey);
+        // Forget all tracked product list cache keys
+        $registeredKeys = Cache::get('products_cache_keys', []);
+        foreach ($registeredKeys as $key) {
+            Cache::forget($key);
+        }
+        Cache::forget('products_cache_keys');
+
+        // Forget individual product caches — use withTrashed() so soft-deleted
+        // product IDs are included and their cache entries are also busted.
+        $productIds = Product::withTrashed()->pluck('id');
+        foreach ($productIds as $id) {
+            Cache::forget('product_' . $id);
+        }
+    }
+
+    /**
+     * Cache with key tracking — remembers which keys were used.
+     */
+    private function rememberProduct($cacheKey, $ttl, $callback)
+    {
+        // Register this cache key
+        $registeredKeys = Cache::get('products_cache_keys', []);
+        if (!in_array($cacheKey, $registeredKeys)) {
+            $registeredKeys[] = $cacheKey;
+            Cache::put('products_cache_keys', $registeredKeys, $ttl * 2);
+        }
+        return Cache::remember($cacheKey, $ttl, $callback);
     }
 
     /**
@@ -28,33 +55,69 @@ class ProductController extends BaseController
      */
     public function index(Request $request)
     {
+        // Create cache key based on request parameters
+        $cacheKey = 'products_list_' . md5(json_encode($request->all()));
+        
+        // Try to get from cache (without tags for database cache driver compatibility)
+        $products = $this->rememberProduct($cacheKey, self::CACHE_TTL, function () use ($request) {
+            $query = Product::with('category');
+
+            // Filter by category
+            $categoryId = $request->input('category_id');
+            if ($categoryId !== null) {
+                $query->where('category_id', $categoryId);
+            }
+
+            // Filter by availability
+            $isAvailable = $request->input('is_available');
+            if ($isAvailable !== null) {
+                $query->where('is_available', $isAvailable);
+            }
+
+            // Search by name
+            $search = $request->input('search');
+            if ($search !== null) {
+                $query->where('name', 'like', '%' . $search . '%');
+            }
+
+            // Sorting
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            return $query->paginate($perPage);
+        });
+
+        return $this->sendResponse($products, 'Products retrieved successfully');
+    }
+
+    /**
+     * Admin product listing — bypasses cache, returns all products (no pagination
+     * limit by default so the admin sees every record).
+     */
+    public function adminIndex(Request $request)
+    {
         $query = Product::with('category');
 
-        // Filter by category
-        $categoryId = $request->input('category_id');
-        if ($categoryId !== null) {
-            $query->where('category_id', $categoryId);
+        // Optional filters (same as public index)
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->input('category_id'));
+        }
+        if ($request->filled('is_available')) {
+            $query->where('is_available', $request->input('is_available'));
+        }
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->input('search') . '%');
         }
 
-        // Filter by availability
-        $isAvailable = $request->input('is_available');
-        if ($isAvailable !== null) {
-            $query->where('is_available', $isAvailable);
-        }
-
-        // Search by name
-        $search = $request->input('search');
-        if ($search !== null) {
-            $query->where('name', 'like', '%' . $search . '%');
-        }
-
-        // Sorting
-        $sortBy = $request->get('sort_by', 'created_at');
+        $sortBy    = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
-        // Pagination
-        $perPage = $request->get('per_page', 15);
+        // Paginate with a larger default so the admin sees all products
+        $perPage  = $request->get('per_page', 100);
         $products = $query->paginate($perPage);
 
         return $this->sendResponse($products, 'Products retrieved successfully');
@@ -115,7 +178,11 @@ class ProductController extends BaseController
      */
     public function show($id)
     {
-        $product = Product::with('category')->find($id);
+        $cacheKey = 'product_' . $id;
+        
+        $product = $this->rememberProduct($cacheKey, self::CACHE_TTL, function () use ($id) {
+            return Product::with('category')->find($id);
+        });
 
         if (!$product) {
             return $this->sendNotFound('Product not found');

@@ -178,6 +178,25 @@ class AttendanceController extends BaseController
     public function getSummary(Request $request)
     {
         try {
+            // If no parameters provided, return today's summary for all employees
+            if (!$request->has('employee_id') && !$request->has('month')) {
+                $today = Carbon::today();
+
+                $attendances = Attendance::whereDate('date', $today)->get();
+
+                $summary = [
+                    'present_today' => $attendances->where('status', 'present')->count(),
+                    'absent_today' => $attendances->where('status', 'absent')->count(),
+                    'late_today' => $attendances->where('status', 'late')->count(),
+                    'total_employees' => Employee::count(),
+                    'on_leave_today' => $attendances->where('status', 'on_leave')->count(),
+                    'half_day_today' => $attendances->where('status', 'half_day')->count(),
+                ];
+
+                return $this->sendResponse($summary, 'Today\'s attendance summary retrieved successfully');
+            }
+
+            // Original validation for specific employee/month summary
             $request->validate([
                 'employee_id' => 'required|exists:employees,id',
                 'month' => 'required|date_format:Y-m',
@@ -206,6 +225,59 @@ class AttendanceController extends BaseController
             return $this->sendValidationError($e->errors());
         } catch (\Exception $e) {
             return $this->sendError('Failed to retrieve attendance summary', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get authenticated employee's attendance status (today + recent history)
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getMyAttendance(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $employee = Employee::where('user_id', $user->id)->first();
+
+            if (!$employee) {
+                return $this->sendError('Employee record not found', 404);
+            }
+
+            $today = Carbon::today();
+
+            // Today's record
+            $todayRecord = Attendance::where('employee_id', $employee->id)
+                ->where('date', $today->format('Y-m-d'))
+                ->first();
+
+            // Recent history – last 14 days (excluding today)
+            $history = Attendance::where('employee_id', $employee->id)
+                ->where('date', '<', $today->format('Y-m-d'))
+                ->orderBy('date', 'desc')
+                ->limit(14)
+                ->get();
+
+            // Monthly stats for current month
+            $startOfMonth = $today->copy()->startOfMonth();
+            $monthRecords = Attendance::where('employee_id', $employee->id)
+                ->whereBetween('date', [$startOfMonth, $today])
+                ->get();
+
+            $stats = [
+                'present'     => $monthRecords->where('status', 'present')->count(),
+                'late'        => $monthRecords->where('status', 'late')->count(),
+                'absent'      => $monthRecords->where('status', 'absent')->count(),
+                'total_hours' => round($monthRecords->sum('hours_worked'), 1),
+            ];
+
+            return $this->sendResponse([
+                'today'   => $todayRecord,
+                'history' => $history,
+                'stats'   => $stats,
+            ], 'My attendance retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to retrieve attendance', 500, ['error' => $e->getMessage()]);
         }
     }
 }

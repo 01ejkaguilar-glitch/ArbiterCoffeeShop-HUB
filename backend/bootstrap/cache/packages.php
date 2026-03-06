@@ -1,27 +1,17 @@
 <?php return array (
-  'barryvdh/laravel-debugbar' => 
-  array (
-    'aliases' => 
-    array (
-      'Debugbar' => 'Barryvdh\\Debugbar\\Facades\\Debugbar',
-    ),
-    'providers' => 
-    array (
-      0 => 'Barryvdh\\Debugbar\\ServiceProvider',
-    ),
-  ),
-  'barryvdh/laravel-ide-helper' => 
-  array (
-    'providers' => 
-    array (
-      0 => 'Barryvdh\\LaravelIdeHelper\\IdeHelperServiceProvider',
-    ),
-  ),
   'laravel/pail' => 
   array (
     'providers' => 
     array (
       0 => 'Laravel\\Pail\\PailServiceProvider',
+    ),
+  ),
+  'laravel/reverb' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Laravel\\Reverb\\ApplicationManagerServiceProvider',
+      1 => 'Laravel\\Reverb\\ReverbServiceProvider',
     ),
   ),
   'laravel/sail' => 

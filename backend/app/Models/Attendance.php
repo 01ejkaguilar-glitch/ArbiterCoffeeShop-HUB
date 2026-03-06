@@ -44,6 +44,8 @@ class Attendance extends Model
         'notes',
     ];
 
+    protected $appends = ['hours_worked'];
+
     protected $casts = [
         'date' => 'date',
         'clock_in' => 'datetime',

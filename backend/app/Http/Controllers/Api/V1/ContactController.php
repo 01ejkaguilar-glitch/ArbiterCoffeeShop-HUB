@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\BaseController;
 use App\Models\Contact;
+use App\Models\User;
 use App\Http\Requests\StoreContactRequest;
+use App\Notifications\NewContactFormSubmission;
+use App\Notifications\ContactFormAutoReply;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Notification;
 
 class ContactController extends BaseController
 {
@@ -17,8 +21,23 @@ class ContactController extends BaseController
     {
         $contact = Contact::create($request->validated());
 
-        // TODO: Send email notification to admin
-        // TODO: Send auto-reply email to customer
+        try {
+            // Send email notification to admins
+            $admins = User::whereHas('roles', function ($query) {
+                $query->whereIn('name', ['admin', 'super-admin']);
+            })->get();
+
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new NewContactFormSubmission($contact));
+            }
+
+            // Send auto-reply email to customer
+            Notification::route('mail', $contact->email)
+                ->notify(new ContactFormAutoReply($contact));
+        } catch (\Exception $e) {
+            // Log error but don't fail the request
+            \Log::error('Failed to send contact form notifications: ' . $e->getMessage());
+        }
 
         return $this->sendCreated($contact, 'Your message has been sent successfully. We will get back to you soon.');
     }

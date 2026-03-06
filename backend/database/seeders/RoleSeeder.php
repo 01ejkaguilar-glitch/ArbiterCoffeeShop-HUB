@@ -23,6 +23,7 @@ class RoleSeeder extends Seeder
             'admin' => 'Administrator',
             'workforce-manager' => 'Workforce Manager',
             'barista' => 'Barista',
+            'kitchen-staff' => 'Kitchen Staff',
             'customer' => 'Customer',
         ];
 
@@ -70,6 +71,11 @@ class RoleSeeder extends Seeder
 
         $barista = Role::findByName('barista');
         $barista->givePermissionTo([
+            'view products', 'view orders', 'manage orders'
+        ]);
+
+        $kitchenStaff = Role::findByName('kitchen-staff');
+        $kitchenStaff->givePermissionTo([
             'view products', 'view orders', 'manage orders'
         ]);
 

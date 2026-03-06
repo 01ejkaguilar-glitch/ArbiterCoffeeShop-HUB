@@ -1,316 +1,382 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Badge, Alert, Spinner, ProgressBar, Form } from 'react-bootstrap';
-import { FaChartLine, FaClock, FaStar, FaCheckCircle, FaExclamationTriangle, FaTrophy, FaCalendarAlt } from 'react-icons/fa';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  FaChartLine, FaClock, FaStar, FaCheckCircle,
+  FaExclamationTriangle, FaTrophy, FaCalendarAlt,
+  FaTasks, FaUserClock,
+} from 'react-icons/fa';
 import { API_ENDPOINTS } from '../../config/api';
 import apiService from '../../services/api.service';
-import { useNotificationSystem } from '../../components/common/NotificationSystem';
+import './TrainingInsights.css';
 
+/* ── Helpers ─────────────────────────────────────────────────── */
+const getGrade = (rate) => {
+  if (rate >= 95) return { grade: 'A+', label: 'Outstanding',    cls: 'success' };
+  if (rate >= 85) return { grade: 'A',  label: 'Excellent',      cls: 'success' };
+  if (rate >= 75) return { grade: 'B+', label: 'Very Good',      cls: 'info' };
+  if (rate >= 65) return { grade: 'B',  label: 'Good',           cls: 'info' };
+  if (rate >= 55) return { grade: 'C+', label: 'Satisfactory',   cls: 'warning' };
+  if (rate >= 45) return { grade: 'C',  label: 'Needs Work',     cls: 'warning' };
+  return             { grade: 'D',  label: 'Below Standard', cls: 'danger' };
+};
+
+const getSpeedInfo = (minutes) => {
+  if (minutes == null || minutes === 0) return { label: 'N/A', pct: 0, cls: 'secondary' };
+  if (minutes <= 8)  return { label: 'Fast',    pct: 100, badgeCls: 'success', fillCls: 'green' };
+  if (minutes <= 12) return { label: 'Good',    pct: 75,  badgeCls: 'info',    fillCls: 'blue' };
+  if (minutes <= 15) return { label: 'Average', pct: 50,  badgeCls: 'warning', fillCls: 'amber' };
+  return                    { label: 'Slow',    pct: 25,  badgeCls: 'danger',  fillCls: 'amber' };
+};
+
+const fmtTime = (t) => {
+  if (!t) return '—';
+  const [h, m] = t.split(':');
+  const hr = parseInt(h, 10);
+  return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+};
+
+/* ════════════════════════════════════════════════════════════════
+   Main component
+   ════════════════════════════════════════════════════════════════ */
 const TrainingInsights = () => {
-  const { user } = useAuth();
-  const [performanceData, setPerformanceData] = useState(null);
+  const [perf, setPerf]     = useState(null);
+  const [tasks, setTasks]   = useState([]);
+  const [shift, setShift]   = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState(null);
   const [period, setPeriod] = useState('today');
-  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchPerformanceData();
-  }, [period]);
-
-  const fetchPerformanceData = async () => {
+  /* ── Fetch all three data sources in parallel ─────────────── */
+  const fetchAll = useCallback(async (p) => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const response = await apiService.get(`${API_ENDPOINTS.BARISTA.PERFORMANCE}?period=${period}`);
-      setPerformanceData(response.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching performance data:', err);
-      setError('Failed to load performance data. Barista tracking may not be fully implemented yet.');
+      const [perfRes, tasksRes, shiftRes] = await Promise.allSettled([
+        apiService.get(API_ENDPOINTS.BARISTA.PERFORMANCE, { params: { period: p } }),
+        apiService.get(API_ENDPOINTS.BARISTA.TASKS_TODAY),
+        apiService.get(API_ENDPOINTS.BARISTA.SHIFT_CURRENT),
+      ]);
+
+      if (perfRes.status === 'fulfilled') {
+        setPerf(perfRes.value.data?.data ?? perfRes.value.data);
+      } else {
+        setError('Failed to load performance data.');
+      }
+
+      if (tasksRes.status === 'fulfilled') {
+        const raw = tasksRes.value.data?.data ?? tasksRes.value.data;
+        setTasks(Array.isArray(raw) ? raw : []);
+      }
+
+      if (shiftRes.status === 'fulfilled') {
+        setShift(shiftRes.value.data?.data ?? null);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const getPerformanceGrade = (score) => {
-    if (score >= 9.0) return { grade: 'A+', color: 'success', label: 'Outstanding' };
-    if (score >= 8.5) return { grade: 'A', color: 'success', label: 'Excellent' };
-    if (score >= 8.0) return { grade: 'B+', color: 'info', label: 'Very Good' };
-    if (score >= 7.5) return { grade: 'B', color: 'info', label: 'Good' };
-    if (score >= 7.0) return { grade: 'C+', color: 'warning', label: 'Satisfactory' };
-    if (score >= 6.0) return { grade: 'C', color: 'warning', label: 'Needs Improvement' };
-    return { grade: 'D', color: 'danger', label: 'Below Standard' };
-  };
+  useEffect(() => { fetchAll(period); }, [period, fetchAll]);
 
-  const getSpeedRating = (avgTime) => {
-    if (!avgTime) return { rating: 'N/A', color: 'secondary' };
-    const minutes = parseFloat(avgTime.replace(' minutes', ''));
-    if (minutes <= 8) return { rating: 'Fast', color: 'success' };
-    if (minutes <= 12) return { rating: 'Good', color: 'info' };
-    if (minutes <= 15) return { rating: 'Average', color: 'warning' };
-    return { rating: 'Slow', color: 'danger' };
-  };
+  /* ── Derived ─────────────────────────────────────────────── */
+  const completionRate = useMemo(() => {
+    if (!perf || !perf.total_orders) return 0;
+    return Math.round((perf.orders_completed / perf.total_orders) * 100);
+  }, [perf]);
 
+  const grade   = useMemo(() => perf?.total_orders ? getGrade(completionRate) : null, [perf, completionRate]);
+  const speed   = useMemo(() => getSpeedInfo(perf?.avg_preparation_time ?? null), [perf]);
+  const ratings = useMemo(() => parseFloat(perf?.customer_ratings ?? 0), [perf]);
+
+  const achievements = useMemo(() => [
+    {
+      key: 'master',
+      name: 'Order Master',
+      desc: '10+ orders completed',
+      icon: <FaCheckCircle />,
+      unlocked: (perf?.orders_completed ?? 0) >= 10,
+      color: 'green',
+    },
+    {
+      key: 'speed',
+      name: 'Speed Demon',
+      desc: 'Avg prep time ≤ 10 min',
+      icon: <FaClock />,
+      unlocked: perf?.avg_preparation_time > 0 && perf.avg_preparation_time <= 10,
+      color: 'blue',
+    },
+    {
+      key: 'quality',
+      name: 'Quality Champion',
+      desc: 'Customer rating ≥ 4.5',
+      icon: <FaStar />,
+      unlocked: ratings >= 4.5,
+      color: 'amber',
+    },
+  ], [perf, ratings]);
+
+  /* ── UI states ───────────────────────────────────────────── */
   if (loading) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-        <p className="mt-3">Loading performance data...</p>
-      </Container>
+      <div className="ti-page">
+        <div className="ti-loader">
+          <div className="ti-spinner" />
+          <span>Loading performance data…</span>
+        </div>
+      </div>
     );
   }
 
-  if (error) {
+  if (error && !perf) {
     return (
-      <Container className="py-5">
-        <Alert variant="warning">
-          <Alert.Heading>Performance Data Unavailable</Alert.Heading>
+      <div className="ti-page">
+        <div className="ti-error">
+          <h3><FaExclamationTriangle style={{ marginRight: 8 }} />Performance Data Unavailable</h3>
           <p>{error}</p>
-          <p className="mb-0">
-            <small>
-              Note: Performance tracking requires barista_id to be properly assigned to orders.
-              This feature may not be fully functional until order tracking is implemented.
-            </small>
+          <p style={{ marginTop: 8, fontSize: '0.8rem', opacity: 0.8 }}>
+            Performance tracking requires barista orders to have a barista_id assigned.
+            This becomes active once orders are processed through your account.
           </p>
-        </Alert>
-      </Container>
+        </div>
+      </div>
     );
   }
 
-  const performanceGrade = performanceData ? getPerformanceGrade(4.8) : null; // Mock grade since we don't have real data
-  const speedRating = performanceData ? getSpeedRating(performanceData.avg_preparation_time) : null;
+  /* ── Main render ─────────────────────────────────────────── */
+  const PERIOD_LABEL = { today: 'Today', week: 'This Week', month: 'This Month' };
 
   return (
-    <Container className="py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 className="mb-1">Training Insights</h1>
-          <p className="text-muted mb-0">Track your performance and skill development</p>
+    <div className="ti-page">
+      {/* Topbar */}
+      <div className="ti-topbar">
+        <div className="ti-topbar-title">
+          <h1>Training Insights</h1>
+          <p>Track your performance and skill development — {PERIOD_LABEL[period]}</p>
         </div>
-        <Form.Select
+        <select
+          className="ti-period-select"
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
-          style={{ width: 'auto' }}
+          aria-label="Select time period"
         >
           <option value="today">Today</option>
           <option value="week">This Week</option>
           <option value="month">This Month</option>
-        </Form.Select>
+        </select>
       </div>
 
-      {/* Performance Overview */}
-      <Row className="mb-4">
-        <Col md={3} className="mb-3">
-          <Card className="text-center h-100">
-            <Card.Body>
-              <FaTrophy size={30} className={`text-${performanceGrade?.color || 'secondary'} mb-2`} />
-              <h3 className="mb-1">{performanceGrade?.grade || 'N/A'}</h3>
-              <p className="text-muted mb-1">Performance Grade</p>
-              <Badge bg={performanceGrade?.color || 'secondary'}>
-                {performanceGrade?.label || 'No Data'}
-              </Badge>
-            </Card.Body>
-          </Card>
-        </Col>
+      {/* Stat Cards */}
+      <div className="ti-stats">
+        {/* Grade */}
+        <div className="ti-stat-card">
+          <div className="ti-stat-icon purple"><FaTrophy /></div>
+          <div className="ti-stat-value">{grade?.grade ?? '—'}</div>
+          <div className="ti-stat-label">Performance Grade</div>
+          {grade ? (
+            <div className={`ti-stat-badge ${grade.cls}`}>{grade.label}</div>
+          ) : (
+            <div className="ti-stat-badge secondary">No Data Yet</div>
+          )}
+        </div>
 
-        <Col md={3} className="mb-3">
-          <Card className="text-center h-100">
-            <Card.Body>
-              <FaCheckCircle size={30} className="text-success mb-2" />
-              <h3 className="mb-1">{performanceData?.orders_completed || 0}</h3>
-              <p className="text-muted mb-1">Orders Completed</p>
-              <small className="text-muted">
-                of {performanceData?.total_orders || 0} total
-              </small>
-            </Card.Body>
-          </Card>
-        </Col>
+        {/* Orders completed */}
+        <div className="ti-stat-card">
+          <div className="ti-stat-icon green"><FaCheckCircle /></div>
+          <div className="ti-stat-value">{perf?.orders_completed ?? 0}</div>
+          <div className="ti-stat-label">Orders Completed</div>
+          <div className="ti-stat-badge secondary">of {perf?.total_orders ?? 0} total</div>
+        </div>
 
-        <Col md={3} className="mb-3">
-          <Card className="text-center h-100">
-            <Card.Body>
-              <FaClock size={30} className={`text-${speedRating?.color || 'secondary'} mb-2`} />
-              <h3 className="mb-1">{performanceData?.avg_preparation_time || 'N/A'}</h3>
-              <p className="text-muted mb-1">Avg Prep Time</p>
-              <Badge bg={speedRating?.color || 'secondary'}>
-                {speedRating?.rating || 'No Data'}
-              </Badge>
-            </Card.Body>
-          </Card>
-        </Col>
+        {/* Avg prep time */}
+        <div className="ti-stat-card">
+          <div className="ti-stat-icon blue"><FaClock /></div>
+          <div className="ti-stat-value">
+            {perf?.avg_preparation_time > 0 ? `${perf.avg_preparation_time}m` : '—'}
+          </div>
+          <div className="ti-stat-label">Avg Prep Time</div>
+          {speed.label !== 'N/A' ? (
+            <div className={`ti-stat-badge ${speed.badgeCls}`}>{speed.label}</div>
+          ) : (
+            <div className="ti-stat-badge secondary">No Data</div>
+          )}
+        </div>
 
-        <Col md={3} className="mb-3">
-          <Card className="text-center h-100">
-            <Card.Body>
-              <FaStar size={30} className="text-warning mb-2" />
-              <h3 className="mb-1">{performanceData?.customer_ratings || 'N/A'}</h3>
-              <p className="text-muted mb-1">Customer Rating</p>
-              <div className="mt-1">
-                {performanceData?.customer_ratings ? (
-                  [...Array(5)].map((_, i) => (
-                    <FaStar
-                      key={i}
-                      className={i < Math.floor(performanceData.customer_ratings) ? 'text-warning' : 'text-muted'}
-                      size={12}
-                    />
-                  ))
-                ) : (
-                  <small className="text-muted">No ratings yet</small>
-                )}
+        {/* Customer rating */}
+        <div className="ti-stat-card">
+          <div className="ti-stat-icon amber"><FaStar /></div>
+          <div className="ti-stat-value">{ratings > 0 ? ratings.toFixed(1) : '—'}</div>
+          <div className="ti-stat-label">Customer Rating</div>
+          {ratings > 0 ? (
+            <div className="ti-stars">
+              {[1,2,3,4,5].map(i => (
+                <FaStar key={i} className={i <= Math.round(ratings) ? 'filled' : 'empty'} size={12} />
+              ))}
+            </div>
+          ) : (
+            <div className="ti-stat-badge secondary">No Ratings Yet</div>
+          )}
+        </div>
+      </div>
+
+      {/* Body: breakdown + side column */}
+      <div className="ti-content">
+        {/* Performance Breakdown */}
+        <div className="ti-section">
+          <div className="ti-section-hdr">
+            <FaChartLine /> Performance Breakdown
+          </div>
+          <div className="ti-section-body">
+            <div className="ti-metric">
+              <div className="ti-metric-header">
+                <span className="ti-metric-label">Order Completion Rate</span>
+                <span className="ti-metric-value">{completionRate}%</span>
               </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+              <div className="ti-track">
+                <div className="ti-fill green" style={{ width: `${completionRate}%` }} />
+              </div>
+            </div>
 
-      {/* Detailed Metrics */}
-      <Row className="mb-4">
-        <Col lg={8}>
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">
-                <FaChartLine className="me-2" />
-                Performance Breakdown
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span>Order Completion Rate</span>
-                  <span className="fw-bold">
-                    {performanceData?.total_orders ?
-                      Math.round((performanceData.orders_completed / performanceData.total_orders) * 100) : 0
-                    }%
-                  </span>
-                </div>
-                <ProgressBar
-                  variant="success"
-                  now={performanceData?.total_orders ?
-                    (performanceData.orders_completed / performanceData.total_orders) * 100 : 0
-                  }
-                  style={{ height: '8px' }}
+            <div className="ti-metric">
+              <div className="ti-metric-header">
+                <span className="ti-metric-label">Speed Efficiency</span>
+                <span className="ti-metric-value">
+                  {speed.label !== 'N/A'
+                    ? `${perf?.avg_preparation_time}m avg — ${speed.label}`
+                    : 'No data'}
+                </span>
+              </div>
+              <div className="ti-track">
+                <div className={`ti-fill ${speed.fillCls ?? 'blue'}`} style={{ width: `${speed.pct}%` }} />
+              </div>
+            </div>
+
+            <div className="ti-metric">
+              <div className="ti-metric-header">
+                <span className="ti-metric-label">Customer Satisfaction</span>
+                <span className="ti-metric-value">
+                  {ratings > 0 ? `${((ratings / 5) * 100).toFixed(0)}%` : 'No data'}
+                </span>
+              </div>
+              <div className="ti-track">
+                <div className="ti-fill amber" style={{ width: ratings > 0 ? `${(ratings / 5) * 100}%` : '0%' }} />
+              </div>
+            </div>
+
+            <div className="ti-metric">
+              <div className="ti-metric-header">
+                <span className="ti-metric-label">Tasks Completed Today</span>
+                <span className="ti-metric-value">
+                  {tasks.length > 0
+                    ? `${tasks.filter(t => t.status === 'completed').length} / ${tasks.length}`
+                    : 'None assigned'}
+                </span>
+              </div>
+              <div className="ti-track">
+                <div
+                  className="ti-fill purple"
+                  style={{
+                    width: tasks.length > 0
+                      ? `${(tasks.filter(t => t.status === 'completed').length / tasks.length) * 100}%`
+                      : '0%'
+                  }}
                 />
               </div>
+            </div>
+          </div>
+        </div>
 
-              <div className="mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span>Speed Efficiency</span>
-                  <span className="fw-bold">
-                    {performanceData?.avg_preparation_time ? 'Good' : 'N/A'}
-                  </span>
+        {/* Side column */}
+        <div className="ti-side">
+          {/* Today's Tasks */}
+          <div className="ti-section">
+            <div className="ti-section-hdr">
+              <FaTasks /> Today's Tasks
+            </div>
+            <div className="ti-section-body">
+              {tasks.length === 0 ? (
+                <div className="ti-task-empty">
+                  <FaCalendarAlt size={24} style={{ marginBottom: 8, display: 'block', margin: '0 auto 8px' }} />
+                  <div>No tasks assigned for today</div>
                 </div>
-                <ProgressBar
-                  variant="info"
-                  now={performanceData?.avg_preparation_time ? 75 : 0}
-                  style={{ height: '8px' }}
-                />
-              </div>
+              ) : (
+                <ul className="ti-task-list">
+                  {tasks.map(task => {
+                    const done = task.status === 'completed';
+                    const prio = (task.priority ?? 'low').toLowerCase();
+                    return (
+                      <li key={task.id} className={`ti-task-item${done ? ' done' : ''}`}>
+                        <div className={`ti-task-checkbox${done ? ' checked' : ''}`}>
+                          {done && '✓'}
+                        </div>
+                        <div className="ti-task-info">
+                          <div className={`ti-task-name${done ? ' done' : ''}`}>{task.title}</div>
+                          <div className="ti-task-meta">
+                            <span className={`ti-priority ${prio}`}>{prio}</span>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
 
-              <div className="mb-0">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                  <span>Quality Consistency</span>
-                  <span className="fw-bold">High</span>
-                </div>
-                <ProgressBar
-                  variant="warning"
-                  now={85}
-                  style={{ height: '8px' }}
-                />
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col lg={4}>
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">
-                <FaExclamationTriangle className="me-2" />
-                Areas for Improvement
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="mb-3">
-                <h6 className="text-warning">⚠️ Speed Consistency</h6>
-                <small className="text-muted">
-                  Your preparation times vary significantly. Focus on maintaining consistent timing.
-                </small>
-              </div>
-
-              <div className="mb-3">
-                <h6 className="text-info">💡 Latte Art Skills</h6>
-                <small className="text-muted">
-                  Consider practicing latte art techniques to improve presentation quality.
-                </small>
-              </div>
-
-              <div className="mb-0">
-                <h6 className="text-success">✅ Customer Service</h6>
-                <small className="text-muted">
-                  Your customer ratings are excellent! Keep up the great work.
-                </small>
-              </div>
-            </Card.Body>
-          </Card>
-
-          <Card className="mt-3">
-            <Card.Header>
-              <h5 className="mb-0">
-                <FaCalendarAlt className="me-2" />
-                Today's Tasks
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="text-center py-3">
-                <FaCalendarAlt size={24} className="text-muted mb-2" />
-                <p className="text-muted mb-0">Task tracking not yet implemented</p>
-                <small className="text-muted">
-                  Daily task assignments will appear here
-                </small>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+          {/* Current Shift */}
+          <div className="ti-section">
+            <div className="ti-section-hdr">
+              <FaUserClock /> Current Shift
+            </div>
+            <div className="ti-section-body">
+              {!shift ? (
+                <div className="ti-no-shift">No active shift found for today</div>
+              ) : (
+                <>
+                  <div className="ti-shift-row">
+                    <span className="ti-shift-key">Position</span>
+                    <span className="ti-shift-val">{shift.position ?? '—'}</span>
+                  </div>
+                  <div className="ti-shift-row">
+                    <span className="ti-shift-key">Start</span>
+                    <span className="ti-shift-val">{fmtTime(shift.start_time)}</span>
+                  </div>
+                  <div className="ti-shift-row">
+                    <span className="ti-shift-key">End</span>
+                    <span className="ti-shift-val">{fmtTime(shift.end_time)}</span>
+                  </div>
+                  <div className="ti-shift-row">
+                    <span className="ti-shift-key">Hours In</span>
+                    <span className="ti-shift-val">{shift.elapsed_hours ? `${Number(shift.elapsed_hours).toFixed(1)}h` : '—'}</span>
+                  </div>
+                  <div className="ti-shift-row">
+                    <span className="ti-shift-key">Remaining</span>
+                    <span className="ti-shift-val">{shift.remaining_hours ? `${Number(shift.remaining_hours).toFixed(1)}h` : '—'}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Achievement Badges */}
-      <Card>
-        <Card.Header>
-          <h5 className="mb-0">
-            <FaTrophy className="me-2" />
-            Recent Achievements
-          </h5>
-        </Card.Header>
-        <Card.Body>
-          <Row>
-            <Col md={4} className="mb-3">
-              <div className="text-center p-3 border rounded">
-                <FaCheckCircle size={24} className="text-success mb-2" />
-                <h6>Order Master</h6>
-                <small className="text-muted">Completed 10+ orders today</small>
+      <div className="ti-section">
+        <div className="ti-section-hdr">
+          <FaTrophy /> Achievements
+        </div>
+        <div className="ti-section-body">
+          <div className="ti-achievements">
+            {achievements.map(a => (
+              <div key={a.key} className={`ti-badge-card ${a.unlocked ? `unlocked ${a.color}` : 'locked'}`}>
+                <div className="ti-badge-icon">{a.icon}</div>
+                <div className="ti-badge-name">{a.name}</div>
+                <div className="ti-badge-desc">{a.desc}</div>
+                {!a.unlocked && <div className="ti-locked-label">Locked</div>}
               </div>
-            </Col>
-
-            <Col md={4} className="mb-3">
-              <div className="text-center p-3 border rounded">
-                <FaClock size={24} className="text-info mb-2" />
-                <h6>Speed Demon</h6>
-                <small className="text-muted">Average prep time under 12 min</small>
-              </div>
-            </Col>
-
-            <Col md={4} className="mb-3">
-              <div className="text-center p-3 border rounded">
-                <FaStar size={24} className="text-warning mb-2" />
-                <h6>Quality Champion</h6>
-                <small className="text-muted">Customer rating above 4.5</small>
-              </div>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-    </Container>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

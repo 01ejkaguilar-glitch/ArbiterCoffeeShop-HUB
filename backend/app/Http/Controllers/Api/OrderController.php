@@ -34,12 +34,16 @@ class OrderController extends BaseController
 
             $items = $request->input('items', []);
 
+            // Batch-load all products in a single query instead of N+1
+            $productIds = array_column($items, 'product_id');
+            $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+
             foreach ($items as $item) {
-                $product = Product::findOrFail($item['product_id']);
+                $product = $products->get($item['product_id']);
 
                 if (!$product || !$product->is_available) {
                     return $this->sendError('Product not available', 400, [
-                        'product' => $product->name
+                        'product' => $product->name ?? 'Unknown'
                     ]);
                 }
 
@@ -79,7 +83,7 @@ class OrderController extends BaseController
                 'payment_method' => $request->input('payment_method'),
                 'payment_status' => 'pending',
                 'delivery_address_id' => $request->input('delivery_address_id'),
-                'scheduled_time' => $request->input('scheduled_time'),
+                'scheduled_time' => $request->input('pickup_time'),
                 'notes' => $request->input('notes'),
                 // 'coupon_code' => $request->input('coupon_code'),
             ]);
@@ -240,7 +244,7 @@ class OrderController extends BaseController
                     'product_id' => $product->id,
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
-                    'customizations' => $item->customizations,
+                    'special_instructions' => $item->special_instructions ?? null,
                 ];
             }
 
@@ -271,7 +275,7 @@ class OrderController extends BaseController
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'customizations' => $item['customizations'],
+                    'special_instructions' => $item['special_instructions'] ?? null,
                 ]);
             }
 
@@ -362,7 +366,12 @@ class OrderController extends BaseController
 
             // For cash payments, mark as confirmed and update payment status
             if ($order->payment_method === 'cash') {
+                $order->status = 'confirmed';
                 $order->payment_status = 'paid';
+                $order->save();
+            } else {
+                // For digital payments (gcash, maya, card), mark as confirmed with pending payment
+                $order->status = 'confirmed';
                 $order->save();
             }
 

@@ -23,17 +23,17 @@ class CustomerController extends BaseController
         try {
             $user = Auth::user();
 
-            // Get customer statistics
-            $totalOrders = Order::where('user_id', $user->id)->count();
-            $completedOrders = Order::where('user_id', $user->id)
-                ->where('status', 'completed')
-                ->count();
-            $activeOrders = Order::where('user_id', $user->id)
-                ->whereIn('status', ['pending', 'preparing'])
-                ->count();
-            $totalSpent = Order::where('user_id', $user->id)
-                ->where('payment_status', 'paid')
-                ->sum('total_amount');
+            // Single query for all customer statistics instead of 4 separate queries
+            $stats = Order::where('user_id', $user->id)
+                ->selectRaw("
+                    COUNT(*) as total_orders,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_orders,
+                    SUM(CASE WHEN status IN ('pending','confirmed','preparing','ready') THEN 1 ELSE 0 END) as active_orders,
+                    COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END), 0) as total_spent
+                ")
+                ->first();
+
+            $activeStatuses = ['pending', 'confirmed', 'preparing', 'ready'];
 
             // Get recent orders
             $recentOrders = Order::where('user_id', $user->id)
@@ -42,18 +42,19 @@ class CustomerController extends BaseController
                 ->limit(5)
                 ->get();
 
-            // Get active order (if any)
+            // Get active order (most recent in-progress order)
             $activeOrder = Order::where('user_id', $user->id)
-                ->whereIn('status', ['pending', 'preparing'])
+                ->whereIn('status', $activeStatuses)
                 ->with(['orderItems.product'])
+                ->latest()
                 ->first();
 
             $dashboardData = [
                 'statistics' => [
-                    'total_orders' => $totalOrders,
-                    'completed_orders' => $completedOrders,
-                    'active_orders' => $activeOrders,
-                    'total_spent' => number_format($totalSpent, 2),
+                    'total_orders' => (int) $stats->total_orders,
+                    'completed_orders' => (int) $stats->completed_orders,
+                    'active_orders' => (int) $stats->active_orders,
+                    'total_spent' => round((float) $stats->total_spent, 2),
                 ],
                 'recent_orders' => $recentOrders,
                 'active_order' => $activeOrder,
@@ -129,7 +130,19 @@ class CustomerController extends BaseController
             if (isset($validated['phone'])) $profileData['phone'] = $validated['phone'];
             if (isset($validated['birthday'])) $profileData['birthday'] = $validated['birthday'];
             if (isset($validated['address'])) $profileData['address'] = $validated['address'];
-            if (isset($validated['taste_preferences'])) $profileData['taste_preferences'] = $validated['taste_preferences'];
+
+            // Merge taste_preferences with existing data to preserve nested keys
+            // (notification_preferences, privacy_settings) when updating coffee prefs
+            if (isset($validated['taste_preferences'])) {
+                $existing = [];
+                if ($profile = $user->customerProfile) {
+                    $existing = $profile->taste_preferences ?? [];
+                    if (is_string($existing)) {
+                        $existing = json_decode($existing, true) ?? [];
+                    }
+                }
+                $profileData['taste_preferences'] = array_merge($existing, $validated['taste_preferences']);
+            }
 
             // Update or create customer profile only if there's data to update
             if (!empty($profileData)) {
@@ -280,8 +293,8 @@ class CustomerController extends BaseController
 
             return $this->sendResponse([
                 'total_orders' => $totalOrders,
-                'total_spent' => number_format($totalSpent, 2),
-                'average_order_value' => number_format($averageOrderValue, 2),
+                'total_spent' => round($totalSpent, 2),
+                'average_order_value' => round($averageOrderValue, 2),
                 'favorite_items' => $favoriteItems,
                 'most_ordered_category' => $mostOrderedCategory,
                 'order_frequency' => $orderFrequency,
@@ -518,6 +531,37 @@ class CustomerController extends BaseController
     }
 
     /**
+     * Change customer password
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function changePassword(Request $request)
+    {
+        try {
+            $request->validate([
+                'current_password' => 'required|string',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            $user = Auth::user();
+
+            if (!Hash::check($request->input('current_password'), $user->password)) {
+                return $this->sendError('Current password is incorrect', 400);
+            }
+
+            $user->password = Hash::make($request->input('password'));
+            $user->save();
+
+            return $this->sendResponse(null, 'Password changed successfully');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->sendValidationError($e->errors());
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to change password', 500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Deactivate customer account
      *
      * @param \Illuminate\Http\Request $request
@@ -552,8 +596,8 @@ class CustomerController extends BaseController
                 ]);
             }
 
-            // Logout the user
-            Auth::logout();
+            // Revoke all tokens for this user (Sanctum)
+            $user->tokens()->delete();
 
             return $this->sendResponse(null, 'Account deactivated successfully');
         } catch (\Illuminate\Validation\ValidationException $e) {

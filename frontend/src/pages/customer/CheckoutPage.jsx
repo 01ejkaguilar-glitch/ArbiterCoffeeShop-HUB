@@ -1,597 +1,532 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, ListGroup, Modal, Spinner, Image } from 'react-bootstrap';
-import { FaMapMarkerAlt, FaPlus, FaTrash, FaEdit, FaClock, FaQrcode } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Form, Button, Modal, Spinner } from 'react-bootstrap';
+import {
+  FaUtensils, FaShoppingBag, FaTruck, FaClock, FaMapMarkerAlt,
+  FaMoneyBillWave, FaMobileAlt, FaCreditCard, FaQrcode, FaStickyNote,
+  FaShieldAlt, FaArrowLeft, FaCheckCircle, FaInfoCircle, FaCoffee
+} from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../services/api.service';
-import { API_ENDPOINTS } from '../../config/api';
+import { API_ENDPOINTS, BACKEND_BASE_URL } from '../../config/api';
+import { useToast } from '../../components/animations/Toast';
+import AddressSelector from '../../components/checkout/AddressSelector';
+import SEO from '../../components/SEO';
+
+/* ── helpers ── */
+const fmt = (val) => {
+  const n = parseFloat(val);
+  return isNaN(n) ? '0.00' : n.toFixed(2);
+};
+
+const ORDER_TYPES = [
+  { value: 'dine-in',  label: 'Dine In',  icon: FaUtensils,    desc: 'Enjoy at the shop' },
+  { value: 'take-out', label: 'Take Out',  icon: FaShoppingBag, desc: 'Grab and go' },
+  { value: 'delivery', label: 'Delivery',  icon: FaTruck,       desc: 'We deliver to you' },
+];
+
+const PICKUP_OPTIONS = [
+  { value: 'asap',                label: 'ASAP',              desc: 'Ready in 15–20 min' },
+  { value: '30min',               label: '30 Minutes',        desc: 'Half an hour' },
+  { value: '1hour',               label: '1 Hour',            desc: 'Take your time' },
+  { value: '2hours',              label: '2 Hours',           desc: 'Flexible pickup' },
+  { value: 'tomorrow_morning',    label: 'Tomorrow AM',       desc: '9 : 00 AM' },
+  { value: 'tomorrow_afternoon',  label: 'Tomorrow PM',       desc: '2 : 00 PM' },
+];
+
+const PAYMENT_METHODS = [
+  { value: 'cash',  label: 'Cash',   icon: FaMoneyBillWave, desc: 'Pay upon pickup / delivery' },
+  { value: 'gcash', label: 'GCash',  icon: FaMobileAlt,     desc: 'Scan QR to pay' },
+  { value: 'maya',  label: 'Maya',   icon: FaMobileAlt,     desc: 'Scan QR to pay' },
+  { value: 'card',  label: 'Card',   icon: FaCreditCard,    desc: 'Debit / credit card' },
+];
+
+/* ================================================================ */
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { cart, clearCart } = useCart();
   const { isAuthenticated } = useAuth();
-  
+  const toast = useToast();
+
+  /* state */
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
-  const [orderType, setOrderType] = useState('delivery');
+  const [orderType, setOrderType] = useState('dine-in');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [pickupTime, setPickupTime] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showAddressModal, setShowAddressModal] = useState(false);
   const [showPaymentQR, setShowPaymentQR] = useState(false);
-  const [addressForm, setAddressForm] = useState({
-    type: 'home',
-    street: '',
-    city: '',
-    province: '',
-    postal_code: '',
-    is_default: false,
-  });
+  const [createdOrderId, setCreatedOrderId] = useState(null);
 
+  /* derived */
   const deliveryFee = orderType === 'delivery' ? 50 : 0;
-  const subtotal = cart?.items?.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0) || 0;
+  const subtotal = cart?.items?.reduce(
+    (sum, i) => sum + (parseFloat(i.unit_price ?? i.product?.price) || 0) * i.quantity, 0
+  ) || 0;
   const total = subtotal + deliveryFee;
+  const itemCount = cart?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+  const canOrder = (orderType !== 'delivery' || !!selectedAddressId) && itemCount > 0;
 
+  /* boot */
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: '/checkout' } });
       return;
     }
-    
     if (!cart || !cart.items || cart.items.length === 0) {
       navigate('/cart');
       return;
     }
-
     fetchAddresses();
-  }, [isAuthenticated, cart, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
+  /* addresses */
   const fetchAddresses = async () => {
     try {
       const response = await apiService.get(API_ENDPOINTS.CUSTOMER.ADDRESSES);
       if (response.success) {
         setAddresses(response.data);
-        const defaultAddress = response.data.find(addr => addr.is_default);
-        if (defaultAddress) {
-          setSelectedAddressId(defaultAddress.id);
-        }
+        const def = response.data.find((a) => a.is_default);
+        if (def) setSelectedAddressId(def.id);
       }
     } catch (err) {
       console.error('Error fetching addresses:', err);
     }
   };
 
-  const handleAddressChange = (e) => {
-    setAddressForm({
-      ...addressForm,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleAddAddress = async (e) => {
-    e.preventDefault();
+  const handleAddAddress = async (form) => {
     try {
-      const response = await apiService.post(API_ENDPOINTS.CUSTOMER.ADDRESSES, addressForm);
+      const response = await apiService.post(API_ENDPOINTS.CUSTOMER.ADDRESSES, form);
       if (response.success) {
-        setAddresses([...addresses, response.data]);
+        setAddresses((prev) => [...prev, response.data]);
         setSelectedAddressId(response.data.id);
-        setShowAddressModal(false);
-        setAddressForm({
-          type: 'home',
-          street: '',
-          city: '',
-          province: '',
-          postal_code: '',
-          is_default: false,
-        });
+        return true;
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add address');
     }
+    return false;
   };
 
+  /* place order */
   const handlePlaceOrder = async () => {
     setError('');
-    setLoading(true);
 
+    // Confirmation dialog
+    if (!window.confirm('Are you sure you want to place this order?')) {
+      return;
+    }
+
+    setLoading(true);
     try {
-      // Validate order
       if (orderType === 'delivery' && !selectedAddressId) {
+        toast.warning('Please select a delivery address');
         setError('Please select a delivery address');
         setLoading(false);
         return;
       }
-
-      if (!cart || !cart.items || cart.items.length === 0) {
+      if (!cart?.items?.length) {
+        toast.error('Your cart is empty');
         setError('Your cart is empty');
         setLoading(false);
         return;
       }
 
-      // Prepare order data
       const orderData = {
         order_type: orderType,
         payment_method: paymentMethod,
-        items: cart.items.map(item => ({
-          product_id: item.product_id,
-          quantity: item.quantity,
-          special_instructions: item.special_instructions || null,
+        items: cart.items.map((i) => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+          special_instructions: i.special_instructions || null,
         })),
         notes: notes || null,
       };
+      if (orderType === 'delivery') orderData.delivery_address_id = selectedAddressId;
+      if (orderType === 'take-out' && pickupTime) orderData.pickup_time = pickupTime;
 
-      // Add delivery address if delivery order
-      if (orderType === 'delivery') {
-        orderData.delivery_address_id = selectedAddressId;
-      }
-
-      // Add pickup time if take-out order
-      if (orderType === 'take-out' && pickupTime) {
-        orderData.pickup_time = pickupTime;
-      }
-
-      // Create order
       const response = await apiService.post(API_ENDPOINTS.ORDERS.CREATE, orderData);
 
       if (response.success) {
-        // Show payment QR for digital payments
+        setCreatedOrderId(response.data.id);
         if (['gcash', 'maya'].includes(paymentMethod)) {
           setShowPaymentQR(true);
-          return; // Don't clear cart yet, wait for payment confirmation
+          toast.info('Please complete payment using the QR code');
+          return;
         }
-
-        // Clear cart after successful order
         await clearCart();
-        
-        // Redirect to order confirmation
-        navigate(`/orders/${response.data.id}`, { 
-          state: { orderCreated: true } 
-        });
+        toast.success('Order placed successfully!');
+        navigate(`/orders/${response.data.id}`, { state: { orderCreated: true } });
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to place order. Please try again.');
+      const msg = err.response?.data?.message || 'Failed to place order. Please try again.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
+  /* ── render ── */
   return (
-    <Container className="py-5">
-      <Row className="mb-4">
-        <Col>
-          <h1 className="display-5 fw-bold">Checkout</h1>
-          <p className="lead text-muted">Complete your order</p>
-        </Col>
-      </Row>
+    <main role="main">
+      <SEO title="Checkout" url="/checkout" />
+      <Container className="py-5">
 
-      {error && (
-        <Alert variant="danger" dismissible onClose={() => setError('')}>
-          {error}
-        </Alert>
-      )}
+        {/* Header */}
+        <div className="co-header">
+          <Button as={Link} to="/cart" variant="outline-primary" size="sm" className="co-back-btn">
+            <FaArrowLeft className="me-2" /> Back to Cart
+          </Button>
+          <div>
+            <h1 className="co-title">Checkout</h1>
+            <p className="co-subtitle">
+              {itemCount} {itemCount === 1 ? 'item' : 'items'} &middot; ₱{fmt(subtotal)}
+            </p>
+          </div>
+        </div>
 
-      <Row>
-        <Col lg={8}>
-          {/* Order Type */}
-          <Card className="shadow-sm mb-4">
-            <Card.Header className="bg-primary text-white">
-              <h5 className="mb-0">Order Type</h5>
-            </Card.Header>
-            <Card.Body>
-              <Form>
-                <Form.Check
-                  type="radio"
-                  name="orderType"
-                  label="Dine In"
-                  value="dine-in"
-                  checked={orderType === 'dine-in'}
-                  onChange={(e) => setOrderType(e.target.value)}
-                  className="mb-2"
-                />
-                <Form.Check
-                  type="radio"
-                  name="orderType"
-                  label="Take Out"
-                  value="take-out"
-                  checked={orderType === 'take-out'}
-                  onChange={(e) => setOrderType(e.target.value)}
-                  className="mb-2"
-                />
-                <Form.Check
-                  type="radio"
-                  name="orderType"
-                  label="Delivery"
-                  value="delivery"
-                  checked={orderType === 'delivery'}
-                  onChange={(e) => setOrderType(e.target.value)}
-                  className="mb-2"
-                />
-              </Form>
-            </Card.Body>
-          </Card>
+        {/* Error */}
+        {error && (
+          <div className="co-alert co-alert-danger" role="alert">
+            <FaInfoCircle className="me-2" />
+            {error}
+            <button className="co-alert-close" onClick={() => setError('')} aria-label="Dismiss">&times;</button>
+          </div>
+        )}
 
-          {/* Pickup Time Selection for Take-out */}
-          {orderType === 'take-out' && (
-            <Card className="shadow-sm mb-4">
-              <Card.Header className="bg-info text-white">
-                <h5 className="mb-0">
-                  <FaClock className="me-2" />
-                  Pickup Time
-                </h5>
-              </Card.Header>
-              <Card.Body>
-                <Form.Group>
-                  <Form.Label>Select pickup time:</Form.Label>
-                  <Form.Select
-                    value={pickupTime}
-                    onChange={(e) => setPickupTime(e.target.value)}
-                    required={orderType === 'take-out'}
+        <Row className="g-4">
+          {/* ─────── LEFT: form sections ─────── */}
+          <Col lg={8}>
+
+            {/* 1 ── Order Type ─────────────────── */}
+            <section className="co-section">
+              <h2 className="co-section-title">
+                <span className="co-step-badge">1</span> Order Type
+              </h2>
+              <div className="co-type-grid">
+                {ORDER_TYPES.map(({ value, label, icon: Icon, desc }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`co-type-card${orderType === value ? ' co-type-active' : ''}`}
+                    onClick={() => setOrderType(value)}
+                    aria-pressed={orderType === value}
                   >
-                    <option value="">Select a time</option>
-                    <option value="asap">ASAP (Ready in 15-20 minutes)</option>
-                    <option value="30min">In 30 minutes</option>
-                    <option value="1hour">In 1 hour</option>
-                    <option value="2hours">In 2 hours</option>
-                    <option value="tomorrow_morning">Tomorrow morning (9:00 AM)</option>
-                    <option value="tomorrow_afternoon">Tomorrow afternoon (2:00 PM)</option>
-                  </Form.Select>
-                  <Form.Text className="text-muted">
-                    Business hours: Monday-Sunday, 7:00 AM - 10:00 PM
-                  </Form.Text>
-                </Form.Group>
-              </Card.Body>
-            </Card>
-          )}
-
-          {/* Delivery Address */}
-          {orderType === 'delivery' && (
-            <Card className="shadow-sm mb-4">
-              <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">Delivery Address</h5>
-                <Button
-                  variant="light"
-                  size="sm"
-                  onClick={() => setShowAddressModal(true)}
-                >
-                  <FaPlus className="me-1" />
-                  Add New
-                </Button>
-              </Card.Header>
-              <Card.Body>
-                {addresses.length === 0 ? (
-                  <Alert variant="info">
-                    No addresses found. Please add a delivery address.
-                  </Alert>
-                ) : (
-                  <ListGroup>
-                    {addresses.map((address) => (
-                      <ListGroup.Item
-                        key={address.id}
-                        action
-                        active={selectedAddressId === address.id}
-                        onClick={() => setSelectedAddressId(address.id)}
-                        className="d-flex justify-content-between align-items-start"
-                      >
-                        <div>
-                          <div className="fw-bold">
-                            <FaMapMarkerAlt className="me-2" />
-                            {address.type.charAt(0).toUpperCase() + address.type.slice(1)}
-                            {address.is_default && (
-                              <span className="badge bg-success ms-2">Default</span>
-                            )}
-                          </div>
-                          <div className="text-muted">
-                            {address.street}, {address.city}, {address.province} {address.postal_code}
-                          </div>
-                        </div>
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
-                )}
-              </Card.Body>
-            </Card>
-          )}
-
-          {/* Payment Method */}
-          <Card className="shadow-sm mb-4">
-            <Card.Header className="bg-primary text-white">
-              <h5 className="mb-0">Payment Method</h5>
-            </Card.Header>
-            <Card.Body>
-              <Form>
-                <Form.Check
-                  type="radio"
-                  name="payment"
-                  label="Cash on Delivery / Cash"
-                  value="cash"
-                  checked={paymentMethod === 'cash'}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mb-3"
-                />
-                <Form.Check
-                  type="radio"
-                  name="payment"
-                  label={
-                    <div className="d-flex align-items-center">
-                      <span>GCash</span>
-                      <small className="text-muted ms-2">(QR code will be shown after order)</small>
-                    </div>
-                  }
-                  value="gcash"
-                  checked={paymentMethod === 'gcash'}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mb-3"
-                />
-                <Form.Check
-                  type="radio"
-                  name="payment"
-                  label={
-                    <div className="d-flex align-items-center">
-                      <span>Maya</span>
-                      <small className="text-muted ms-2">(QR code will be shown after order)</small>
-                    </div>
-                  }
-                  value="maya"
-                  checked={paymentMethod === 'maya'}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mb-3"
-                />
-                <Form.Check
-                  type="radio"
-                  name="payment"
-                  label="Card"
-                  value="card"
-                  checked={paymentMethod === 'card'}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mb-3"
-                />
-              </Form>
-
-              {['gcash', 'maya'].includes(paymentMethod) && (
-                <Alert variant="info" className="mt-3">
-                  <FaQrcode className="me-2" />
-                  <strong>Digital Payment:</strong> After placing your order, a QR code will be displayed for payment.
-                  Please scan the code with your {paymentMethod === 'gcash' ? 'GCash' : 'Maya'} app to complete the payment.
-                </Alert>
-              )}
-            </Card.Body>
-          </Card>
-
-          {/* Order Notes */}
-          <Card className="shadow-sm mb-4">
-            <Card.Header className="bg-primary text-white">
-              <h5 className="mb-0">Order Notes (Optional)</h5>
-            </Card.Header>
-            <Card.Body>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                placeholder="Add any special instructions for your order..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </Card.Body>
-          </Card>
-        </Col>
-
-        <Col lg={4}>
-          {/* Order Summary */}
-          <Card className="shadow-sm sticky-top" style={{ top: '20px' }}>
-            <Card.Header className="bg-success text-white">
-              <h5 className="mb-0">Order Summary</h5>
-            </Card.Header>
-            <Card.Body>
-              {/* Cart Items */}
-              <div className="mb-3">
-                {cart?.items?.map((item, index) => (
-                  <div key={index} className="d-flex justify-content-between mb-2">
-                    <div className="flex-grow-1">
-                      <div className="fw-bold">{item.product?.name || 'Product'}</div>
-                      <div className="text-muted small">Qty: {item.quantity} × ₱{parseFloat(item.unit_price).toFixed(2)}</div>
-                    </div>
-                    <div className="fw-bold">
-                      ₱{(item.unit_price * item.quantity).toFixed(2)}
-                    </div>
-                  </div>
+                    <span className="co-type-icon"><Icon /></span>
+                    <span className="co-type-label">{label}</span>
+                    <span className="co-type-desc">{desc}</span>
+                  </button>
                 ))}
               </div>
-              
-              <hr />
-              
-              <div className="d-flex justify-content-between mb-2">
-                <span>Subtotal:</span>
-                <span>₱{subtotal.toFixed(2)}</span>
+            </section>
+
+            {/* 2 ── Pickup Time (take-out only) ── */}
+            {orderType === 'take-out' && (
+              <section className="co-section">
+                <h2 className="co-section-title">
+                  <span className="co-step-badge">2</span> Pickup Time
+                </h2>
+                <div className="co-pickup-grid">
+                  {PICKUP_OPTIONS.map(({ value, label, desc }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`co-pickup-card${pickupTime === value ? ' co-pickup-active' : ''}`}
+                      onClick={() => setPickupTime(value)}
+                      aria-pressed={pickupTime === value}
+                    >
+                      <FaClock className="co-pickup-icon" />
+                      <span className="co-pickup-label">{label}</span>
+                      <span className="co-pickup-desc">{desc}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="co-hint"><FaInfoCircle className="me-1" /> Hours: Mon – Sun, 7 AM – 10 PM</p>
+              </section>
+            )}
+
+            {/* 2/3 ── Delivery Address ────────── */}
+            {orderType === 'delivery' && (
+              <section className="co-section">
+                <h2 className="co-section-title">
+                  <span className="co-step-badge">2</span> Delivery Address
+                </h2>
+                {addresses.length === 0 ? (
+                  <div className="co-empty-address">
+                    <FaMapMarkerAlt className="co-empty-icon" />
+                    <p>No saved addresses yet.</p>
+                    <AddressSelector
+                      addresses={addresses}
+                      selectedAddressId={selectedAddressId}
+                      setSelectedAddressId={setSelectedAddressId}
+                      onAddAddress={handleAddAddress}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="co-address-list">
+                      {addresses.map((addr) => (
+                        <button
+                          key={addr.id}
+                          type="button"
+                          className={`co-address-card${selectedAddressId === addr.id ? ' co-address-active' : ''}`}
+                          onClick={() => setSelectedAddressId(addr.id)}
+                          aria-pressed={selectedAddressId === addr.id}
+                        >
+                          <div className="co-address-icon-wrap">
+                            <FaMapMarkerAlt />
+                          </div>
+                          <div className="co-address-info">
+                            <span className="co-address-type">
+                              {addr.type?.charAt(0).toUpperCase() + addr.type?.slice(1)}
+                              {addr.is_default && <span className="co-badge-default">Default</span>}
+                            </span>
+                            <span className="co-address-text">
+                              {addr.street}, {addr.city}, {addr.province} {addr.postal_code}
+                            </span>
+                          </div>
+                          {selectedAddressId === addr.id && (
+                            <FaCheckCircle className="co-address-check" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <AddressSelector
+                      addresses={addresses}
+                      selectedAddressId={selectedAddressId}
+                      setSelectedAddressId={setSelectedAddressId}
+                      onAddAddress={handleAddAddress}
+                      triggerOnly
+                    />
+                  </>
+                )}
+              </section>
+            )}
+
+            {/* 3 ── Payment Method ────────────── */}
+            <section className="co-section">
+              <h2 className="co-section-title">
+                <span className="co-step-badge">{orderType === 'dine-in' ? 2 : 3}</span> Payment Method
+              </h2>
+              <div className="co-pay-grid">
+                {PAYMENT_METHODS.map(({ value, label, icon: Icon, desc }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`co-pay-card${paymentMethod === value ? ' co-pay-active' : ''}`}
+                    onClick={() => setPaymentMethod(value)}
+                    aria-pressed={paymentMethod === value}
+                  >
+                    <span className="co-pay-icon"><Icon /></span>
+                    <span className="co-pay-label">{label}</span>
+                    <span className="co-pay-desc">{desc}</span>
+                  </button>
+                ))}
               </div>
-              <div className="d-flex justify-content-between mb-2">
-                <span>Delivery Fee:</span>
-                <span>₱{deliveryFee.toFixed(2)}</span>
+              {['gcash', 'maya'].includes(paymentMethod) && (
+                <div className="co-pay-note">
+                  <FaQrcode className="me-2" />
+                  A QR code will be shown after placing the order for {paymentMethod === 'gcash' ? 'GCash' : 'Maya'} payment.
+                </div>
+              )}
+            </section>
+
+            {/* 4 ── Notes ─────────────────────── */}
+            <section className="co-section">
+              <h2 className="co-section-title">
+                <span className="co-step-badge">{orderType === 'dine-in' ? 3 : 4}</span>
+                Order Notes
+                <span className="co-optional">(optional)</span>
+              </h2>
+              <div className="co-notes-wrap">
+                <FaStickyNote className="co-notes-icon" />
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  className="co-notes-input"
+                  placeholder="Add any special instructions for your order…"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  maxLength={1000}
+                />
               </div>
-              <hr />
-              <div className="d-flex justify-content-between mb-4">
-                <span className="fw-bold">Total:</span>
-                <span className="fw-bold fs-5">₱{total.toFixed(2)}</span>
+            </section>
+          </Col>
+
+          {/* ─────── RIGHT: order summary ─────── */}
+          <Col lg={4}>
+            <div className="co-summary-card">
+              <h2 className="co-summary-title">Order Summary</h2>
+
+              {/* Item list */}
+              <div className="co-summary-items">
+                {cart?.items?.map((item) => {
+                  const price = parseFloat(item.unit_price ?? item.product?.price) || 0;
+                  return (
+                    <div key={item.id} className="co-summary-item">
+                      <img
+                        className="co-summary-img"
+                        src={
+                          item.product?.image_url
+                            ? `${BACKEND_BASE_URL}${item.product.image_url}`
+                            : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIGZpbGw9IiNmMGYwZjAiLz48dGV4dCB4PSIzMCIgeT0iMzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuMzVlbSIgZmlsbD0iI2FhYSIgZm9udC1zaXplPSIxMCI+Q29mZmVlPC90ZXh0Pjwvc3ZnPg=='
+                        }
+                        alt={item.product?.name}
+                        loading="lazy"
+                      />
+                      <div className="co-summary-item-info">
+                        <span className="co-summary-item-name">{item.product?.name}</span>
+                        <span className="co-summary-item-qty">
+                          {item.quantity} &times; ₱{fmt(price)}
+                        </span>
+                      </div>
+                      <span className="co-summary-item-total">₱{fmt(price * item.quantity)}</span>
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* Totals */}
+              <div className="co-summary-rows">
+                <div className="co-summary-row">
+                  <span>Subtotal</span>
+                  <span>₱{fmt(subtotal)}</span>
+                </div>
+                <div className="co-summary-row">
+                  <span>Delivery Fee</span>
+                  <span>{deliveryFee > 0 ? `₱${fmt(deliveryFee)}` : 'Free'}</span>
+                </div>
+              </div>
+
+              <div className="co-summary-total">
+                <span>Total</span>
+                <span>₱{fmt(total)}</span>
+              </div>
+
+              {/* Place order */}
               <Button
-                variant="success"
+                variant="primary"
                 size="lg"
-                className="w-100"
+                className="w-100 co-place-btn"
                 onClick={handlePlaceOrder}
-                disabled={loading || (orderType === 'delivery' && !selectedAddressId)}
+                disabled={loading || !canOrder}
               >
                 {loading ? (
                   <>
-                    <Spinner animation="border" size="sm" className="me-2" />
-                    Processing...
+                    <Spinner animation="border" size="sm" className="me-2" /> Processing…
                   </>
                 ) : (
-                  'Place Order'
+                  <>
+                    Place Order &middot; ₱{fmt(total)}
+                  </>
                 )}
               </Button>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
 
-      {/* Add Address Modal */}
-      <Modal show={showAddressModal} onHide={() => setShowAddressModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Address</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={handleAddAddress}>
-            <Form.Group className="mb-3">
-              <Form.Label>Address Type</Form.Label>
-              <Form.Select
-                name="type"
-                value={addressForm.type}
-                onChange={handleAddressChange}
-                required
-              >
-                <option value="home">Home</option>
-                <option value="work">Work</option>
-                <option value="other">Other</option>
-              </Form.Select>
-            </Form.Group>
+              {!canOrder && orderType === 'delivery' && (
+                <p className="co-summary-warn">Please select a delivery address to continue.</p>
+              )}
 
-            <Form.Group className="mb-3">
-              <Form.Label>Street Address</Form.Label>
-              <Form.Control
-                type="text"
-                name="street"
-                value={addressForm.street}
-                onChange={handleAddressChange}
-                placeholder="123 Main Street"
-                required
-              />
-            </Form.Group>
-
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>City</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="city"
-                    value={addressForm.city}
-                    onChange={handleAddressChange}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Province</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="province"
-                    value={addressForm.province}
-                    onChange={handleAddressChange}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Postal Code</Form.Label>
-              <Form.Control
-                type="text"
-                name="postal_code"
-                value={addressForm.postal_code}
-                onChange={handleAddressChange}
-                required
-              />
-            </Form.Group>
-
-            <Form.Check
-              type="checkbox"
-              name="is_default"
-              label="Set as default address"
-              checked={addressForm.is_default}
-              onChange={(e) =>
-                setAddressForm({ ...addressForm, is_default: e.target.checked })
-              }
-              className="mb-3"
-            />
-
-            <div className="d-flex gap-2">
-              <Button variant="secondary" onClick={() => setShowAddressModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" type="submit" className="flex-grow-1">
-                Add Address
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
-      </Modal>
-
-      {/* Payment QR Code Modal */}
-      <Modal show={showPaymentQR} onHide={() => setShowPaymentQR(false)} size="lg" centered>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <FaQrcode className="me-2" />
-            Complete Your Payment
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="text-center">
-          <Alert variant="success" className="mb-4">
-            <h5>Order Placed Successfully!</h5>
-            <p className="mb-0">Please scan the QR code below to complete your payment.</p>
-          </Alert>
-
-          <div className="mb-4">
-            <h6>Payment Amount: ₱{total.toFixed(2)}</h6>
-            <p className="text-muted">Payment Method: {paymentMethod === 'gcash' ? 'GCash' : 'Maya'}</p>
-          </div>
-
-          {/* QR Code Placeholder - In a real implementation, this would be generated by the backend */}
-          <div className="border rounded p-4 mb-4" style={{ backgroundColor: '#f8f9fa' }}>
-            <div className="d-flex align-items-center justify-content-center" style={{ height: '300px' }}>
-              <div>
-                <FaQrcode size={150} className="text-secondary mb-3" />
-                <p className="text-muted">QR Code would be generated here</p>
-                <small className="text-muted">
-                  In production, this would display the actual QR code for {paymentMethod === 'gcash' ? 'GCash' : 'Maya'} payment
-                </small>
+              {/* Trust */}
+              <div className="co-trust">
+                <div className="co-trust-item">
+                  <FaShieldAlt /> Secure Checkout
+                </div>
+                <div className="co-trust-item">
+                  <FaCoffee /> Freshly Prepared
+                </div>
               </div>
             </div>
+          </Col>
+        </Row>
+      </Container>
+
+      {/* ─── Payment QR Modal ──────────────── */}
+      <Modal show={showPaymentQR} onHide={() => setShowPaymentQR(false)} size="md" centered className="co-qr-modal">
+        <Modal.Body className="text-center p-4 p-md-5">
+          <div className="co-qr-success-icon">
+            <FaCheckCircle />
+          </div>
+          <h3 className="co-qr-title">Order Placed!</h3>
+          <p className="co-qr-subtitle">
+            Complete your <strong>{paymentMethod === 'gcash' ? 'GCash' : 'Maya'}</strong> payment below.
+          </p>
+
+          <div className="co-qr-amount">₱{fmt(total)}</div>
+
+          <div className="co-qr-box">
+            <FaQrcode size={120} />
+            <p>QR code will appear here in production</p>
           </div>
 
-          <Alert variant="info">
-            <strong>Instructions:</strong>
-            <ol className="mb-0 mt-2 text-start">
-              <li>Open your {paymentMethod === 'gcash' ? 'GCash' : 'Maya'} app</li>
-              <li>Scan the QR code above</li>
-              <li>Confirm the payment amount</li>
-              <li>Complete the transaction</li>
-              <li>Return to this page and click "Payment Completed"</li>
-            </ol>
-          </Alert>
+          <ol className="co-qr-steps">
+            <li>Open your {paymentMethod === 'gcash' ? 'GCash' : 'Maya'} app</li>
+            <li>Scan the QR code above</li>
+            <li>Confirm the payment amount</li>
+            <li>Tap <strong>"Payment Completed"</strong> below</li>
+          </ol>
+
+          <div className="d-flex gap-3 mt-4">
+            <Button
+              variant="outline-secondary"
+              className="flex-grow-1"
+              disabled={loading}
+              onClick={async () => {
+                // Cancel the created order so it doesn't stay orphaned
+                if (createdOrderId) {
+                  try {
+                    setLoading(true);
+                    await apiService.post(API_ENDPOINTS.ORDERS.CANCEL_REQUEST(createdOrderId));
+                    toast.info('Order cancelled');
+                  } catch (err) {
+                    console.error('Failed to cancel order:', err);
+                    toast.warning('Could not cancel order — please contact support');
+                  } finally {
+                    setLoading(false);
+                  }
+                }
+                setShowPaymentQR(false);
+                setCreatedOrderId(null);
+              }}
+            >
+              Cancel Order
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-grow-1"
+              disabled={loading}
+              onClick={async () => {
+                try {
+                  setLoading(true);
+                  // Confirm payment on the created order
+                  if (createdOrderId) {
+                    await apiService.post(API_ENDPOINTS.ORDERS.CONFIRM(createdOrderId));
+                  }
+                  await clearCart();
+                  setShowPaymentQR(false);
+                  toast.success('Payment confirmed! Order placed successfully.');
+                  navigate(createdOrderId ? `/orders/${createdOrderId}` : '/orders', {
+                    state: { paymentCompleted: true },
+                  });
+                } catch (err) {
+                  const msg = err.response?.data?.message || 'Payment confirmation failed';
+                  toast.error(msg);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              {loading ? <Spinner animation="border" size="sm" /> : 'Payment Completed'}
+            </Button>
+          </div>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowPaymentQR(false)}>
-            Cancel Order
-          </Button>
-          <Button
-            variant="success"
-            onClick={async () => {
-              // In a real implementation, you'd verify payment status with the backend
-              await clearCart();
-              setShowPaymentQR(false);
-              navigate('/orders', {
-                state: { paymentCompleted: true }
-              });
-            }}
-          >
-            Payment Completed
-          </Button>
-        </Modal.Footer>
       </Modal>
-    </Container>
+    </main>
   );
 };
 

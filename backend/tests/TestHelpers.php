@@ -12,19 +12,25 @@ trait TestHelpers
      */
     protected function setupRolesAndPermissions(): void
     {
-        // Create roles using firstOrCreate to avoid duplicate key errors
-        Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'workforce-manager', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'barista', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'customer', 'guard_name' => 'web']);
+        // Ensure Spatie cache is cleared before modifying roles/permissions
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create basic permissions using firstOrCreate
-        Permission::firstOrCreate(['name' => 'manage-users', 'guard_name' => 'web']);
-        Permission::firstOrCreate(['name' => 'manage-products', 'guard_name' => 'web']);
-        Permission::firstOrCreate(['name' => 'manage-orders', 'guard_name' => 'web']);
-        Permission::firstOrCreate(['name' => 'view-analytics', 'guard_name' => 'web']);
-        Permission::firstOrCreate(['name' => 'manage-workforce', 'guard_name' => 'web']);
+        // Create roles for both 'web' and 'sanctum' guards to ensure middleware checks pass in tests
+        $roles = ['super-admin', 'admin', 'manager', 'workforce-manager', 'barista', 'customer'];
+        foreach (['web', 'sanctum'] as $guard) {
+            foreach ($roles as $role) {
+                Role::firstOrCreate(['name' => $role, 'guard_name' => $guard]);
+            }
+        }
+
+        $permissions = ['manage-users', 'manage-products', 'manage-orders', 'view-analytics', 'manage-workforce'];
+        foreach (['web', 'sanctum'] as $guard) {
+            foreach ($permissions as $perm) {
+                Permission::firstOrCreate(['name' => $perm, 'guard_name' => $guard]);
+            }
+        }
+
+        // Clear the cache again to ensure fresh permission lookup in tests
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }

@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Button, Form, Alert, Tab, Tabs, Spinner } from 'react-bootstrap';
-import { FaFileDownload, FaCalendar, FaFilter, FaChartBar, FaCoffee, FaTasks, FaUserClock, FaBriefcase } from 'react-icons/fa';
+import { FaFileDownload, FaFilter, FaCoffee, FaTasks, FaUserClock, FaBriefcase } from 'react-icons/fa';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
-import Loading from '../../components/common/Loading';
 
 const AdminReports = () => {
   const [activeTab, setActiveTab] = useState('attendance');
@@ -18,11 +17,7 @@ const AdminReports = () => {
   });
   const [alert, setAlert] = useState({ show: false, message: '', type: '' });
 
-  useEffect(() => {
-    fetchReport();
-  }, [activeTab]);
-
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     try {
       setLoading(true);
       let endpoint;
@@ -65,7 +60,11 @@ const AdminReports = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, filters]);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
 
   const handleExport = async (format = 'csv') => {
     try {
@@ -108,36 +107,36 @@ const AdminReports = () => {
 
     return (
       <>
-        <Row className="mb-4">
-          <Col md={3}>
+        <Row className="mb-4 g-2 g-md-3">
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Total Records</h6>
-                <h3 className="mb-0">{reportData.stats?.total_records || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Total Records</h6>
+                <h3 className="mb-0 fs-5 fs-md-3">{reportData.stats?.total_records || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Present</h6>
-                <h3 className="mb-0 text-success">{reportData.stats?.present_count || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Present</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-success">{reportData.stats?.present_count || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Absent</h6>
-                <h3 className="mb-0 text-danger">{reportData.stats?.absent_count || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Absent</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-danger">{reportData.stats?.absent_count || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Attendance Rate</h6>
-                <h3 className="mb-0 text-info">{reportData.stats?.attendance_rate || 0}%</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Attendance Rate</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-info">{reportData.stats?.attendance_rate || 0}%</h3>
               </Card.Body>
             </Card>
           </Col>
@@ -194,36 +193,36 @@ const AdminReports = () => {
 
     return (
       <>
-        <Row className="mb-4">
-          <Col md={3}>
+        <Row className="mb-4 g-2 g-md-3">
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Total Leaves</h6>
-                <h3 className="mb-0">{reportData.stats?.total_leave_requests || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Total Leaves</h6>
+                <h3 className="mb-0 fs-5 fs-md-3">{reportData.stats?.total_leave_requests || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Approved</h6>
-                <h3 className="mb-0 text-success">{reportData.stats?.approved_leaves || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Approved</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-success">{reportData.stats?.approved_leaves || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Pending</h6>
-                <h3 className="mb-0 text-warning">{reportData.stats?.pending_leaves || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Pending</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-warning">{reportData.stats?.pending_leaves || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Total OT Hours</h6>
-                <h3 className="mb-0 text-info">{reportData.stats?.total_overtime_hours || 0}h</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Total OT Hours</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-info">{reportData.stats?.total_overtime_hours || 0}h</h3>
               </Card.Body>
             </Card>
           </Col>
@@ -305,36 +304,36 @@ const AdminReports = () => {
 
     return (
       <>
-        <Row className="mb-4">
-          <Col md={3}>
+        <Row className="mb-4 g-2 g-md-3">
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Total Tasks</h6>
-                <h3 className="mb-0">{reportData.stats?.total_tasks || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Total Tasks</h6>
+                <h3 className="mb-0 fs-5 fs-md-3">{reportData.stats?.total_tasks || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Completed</h6>
-                <h3 className="mb-0 text-success">{reportData.stats?.completed_tasks || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Completed</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-success">{reportData.stats?.completed_tasks || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Overdue</h6>
-                <h3 className="mb-0 text-danger">{reportData.stats?.overdue_tasks || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Overdue</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-danger">{reportData.stats?.overdue_tasks || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Completion Rate</h6>
-                <h3 className="mb-0 text-info">{reportData.stats?.completion_rate || 0}%</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Completion Rate</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-info">{reportData.stats?.completion_rate || 0}%</h3>
               </Card.Body>
             </Card>
           </Col>
@@ -398,36 +397,36 @@ const AdminReports = () => {
 
     return (
       <>
-        <Row className="mb-4">
-          <Col md={3}>
+        <Row className="mb-4 g-2 g-md-3">
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Total Beans</h6>
-                <h3 className="mb-0">{reportData.stats?.total_beans || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Total Beans</h6>
+                <h3 className="mb-0 fs-5 fs-md-3">{reportData.stats?.total_beans || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Low Stock</h6>
-                <h3 className="mb-0 text-warning">{reportData.stats?.low_stock_beans || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Low Stock</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-warning">{reportData.stats?.low_stock_beans || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Out of Stock</h6>
-                <h3 className="mb-0 text-danger">{reportData.stats?.out_of_stock_beans || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Out of Stock</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-danger">{reportData.stats?.out_of_stock_beans || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
-          <Col md={3}>
+          <Col xs={6} md={3}>
             <Card className="border-0 shadow-sm">
-              <Card.Body>
-                <h6 className="text-muted mb-2">Featured Times</h6>
-                <h3 className="mb-0 text-info">{reportData.stats?.total_featured_times || 0}</h3>
+              <Card.Body className="p-2 p-md-3">
+                <h6 className="text-muted mb-1 small">Featured Times</h6>
+                <h3 className="mb-0 fs-5 fs-md-3 text-info">{reportData.stats?.total_featured_times || 0}</h3>
               </Card.Body>
             </Card>
           </Col>
@@ -506,10 +505,10 @@ const AdminReports = () => {
       {/* Filters */}
       <Card className="mb-4 shadow-sm">
         <Card.Body>
-          <Row>
-            <Col md={3}>
+          <Row className="g-2 g-md-3">
+            <Col xs={6} md={3}>
               <Form.Group>
-                <Form.Label>Start Date</Form.Label>
+                <Form.Label className="small">Start Date</Form.Label>
                 <Form.Control
                   type="date"
                   name="start_date"
@@ -518,9 +517,9 @@ const AdminReports = () => {
                 />
               </Form.Group>
             </Col>
-            <Col md={3}>
+            <Col xs={6} md={3}>
               <Form.Group>
-                <Form.Label>End Date</Form.Label>
+                <Form.Label className="small">End Date</Form.Label>
                 <Form.Control
                   type="date"
                   name="end_date"
@@ -530,9 +529,9 @@ const AdminReports = () => {
               </Form.Group>
             </Col>
             {activeTab === 'leave_ot' && (
-              <Col md={3}>
+              <Col xs={6} md={3}>
                 <Form.Group>
-                  <Form.Label>Type</Form.Label>
+                  <Form.Label className="small">Type</Form.Label>
                   <Form.Select
                     name="type"
                     value={filters.type}
@@ -546,9 +545,9 @@ const AdminReports = () => {
               </Col>
             )}
             {activeTab === 'tasks' && (
-              <Col md={3}>
+              <Col xs={6} md={3}>
                 <Form.Group>
-                  <Form.Label>Status</Form.Label>
+                  <Form.Label className="small">Status</Form.Label>
                   <Form.Select
                     name="status"
                     value={filters.status}
@@ -563,7 +562,7 @@ const AdminReports = () => {
                 </Form.Group>
               </Col>
             )}
-            <Col md={3} className="d-flex align-items-end">
+            <Col xs={6} md={3} className="d-flex align-items-end">
               <Button variant="primary" onClick={fetchReport} disabled={loading} className="w-100">
                 <FaFilter className="me-2" />
                 {loading ? 'Loading...' : 'Apply Filters'}

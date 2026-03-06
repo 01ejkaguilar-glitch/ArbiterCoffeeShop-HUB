@@ -1,6 +1,7 @@
 import React from 'react';
 import { Container, Row, Col } from 'react-bootstrap';
-import { FaFacebook, FaInstagram, FaTwitter, FaCoffee, FaEnvelope, FaPhone, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaEnvelope, FaPhone, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaTiktok } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {
@@ -9,38 +10,40 @@ const Footer = () => {
   return (
     <footer className="footer">
       <Container>
-        <Row>
+        <Row className="g-4">
           {/* Brand Section */}
-          <Col md={4} className="mb-4">
+          <Col lg={4} md={6}>
             <div className="d-flex align-items-center mb-3">
               <img 
                 src="/assets/arbiter-logo-white.png" 
+                className="me-2 brand-logo"
+                alt="Arbiter Coffee Hub Logo"
+                width="40"
                 height="40"
-                className="me-2"
-                style={{ objectFit: 'contain' }}
+                loading="lazy"
               />
               <h4 className="mb-0 text-white">Arbiter Coffee Hub</h4>
             </div>
-            <p className="text-light">
+            <p className="footer-brand-text">
               Specialty coffee experience delivered with passion. Serving the finest coffee beans
               and artisan beverages since our establishment.
             </p>
-            <div className="d-flex gap-3 mt-3">
-              <a href="https://www.facebook.com/profile.php?id=100085413528378" target="_blank" rel="noopener noreferrer" className="text-success">
-                <FaFacebook size={24} />
+            <div className="d-flex gap-2 mt-3">
+              <a href="https://www.facebook.com/profile.php?id=100085413528378" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Visit our Facebook page">
+                <FaFacebook />
               </a>
-              <a href="https://instagram.com/arbitercoffee.ph" target="_blank" rel="noopener noreferrer" className="text-success">
-                <FaInstagram size={24} />
+              <a href="https://instagram.com/arbitercoffee.ph" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Visit our Instagram page">
+                <FaInstagram />
               </a>
-              <a href="https://tiktok.com/@arbitercoffee.ph" target="_blank" rel="noopener noreferrer" className="text-success">
-                <FaTwitter size={24} />
+              <a href="https://tiktok.com/@arbitercoffee.ph" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Visit our TikTok page">
+                <FaTiktok />
               </a>
             </div>
           </Col>
 
           {/* Quick Links */}
-          <Col md={2} className="mb-4">
-            <h5 className="text-white mb-3">Quick Links</h5>
+          <Col lg={2} md={3} sm={6}>
+            <h5>Quick Links</h5>
             <ul className="list-unstyled">
               <li className="mb-2">
                 <Link to="/" className="text-decoration-none">Home</Link>
@@ -61,8 +64,8 @@ const Footer = () => {
           </Col>
 
           {/* Services */}
-          <Col md={3} className="mb-4">
-            <h5 className="text-white mb-3">Services</h5>
+          <Col lg={3} md={3} sm={6}>
+            <h5>Services</h5>
             <ul className="list-unstyled">
               <li className="mb-2">
                 <Link to="/inquiries" className="text-decoration-none">Barista Training</Link>
@@ -83,22 +86,22 @@ const Footer = () => {
           </Col>
 
           {/* Contact Info */}
-          <Col md={3} className="mb-4">
-            <h5 className="text-white mb-3">Contact Us</h5>
+          <Col lg={3} md={6}>
+            <h5>Contact Us</h5>
             <ul className="list-unstyled">
               <li className="mb-3 d-flex align-items-start">
-                <FaMapMarkerAlt className="text-success mt-1 me-2 flex-shrink-0" />
-                <span className="text-light">Behind House, 146 Bagong Bayan 2, Bongabong, 5211 Oriental Mindoro</span>
+                <FaMapMarkerAlt className="mt-1 me-2 flex-shrink-0" style={{ color: 'var(--color-medium-green)', opacity: 0.8 }} />
+                <span style={{ color: 'rgba(255,255,255,0.65)' }}>Behind House 146, Bagong Bayan 2, Bongabong, 5211 Oriental Mindoro</span>
               </li>
               <li className="mb-3 d-flex align-items-center">
-                <FaPhone className="text-success me-2 flex-shrink-0" />
-                <a href="tel:09772788903" className="text-decoration-none text-light">
+                <FaPhone className="me-2 flex-shrink-0" style={{ color: 'var(--color-medium-green)', opacity: 0.8 }} />
+                <a href="tel:09772788903" className="text-decoration-none">
                   0977 278 8903
                 </a>
               </li>
               <li className="mb-3 d-flex align-items-center">
-                <FaEnvelope className="text-success me-2 flex-shrink-0" />
-                <a href="mailto:arbitercoffee.ph@gmail.com" className="text-decoration-none text-light">
+                <FaEnvelope className="me-2 flex-shrink-0" style={{ color: 'var(--color-medium-green)', opacity: 0.8 }} />
+                <a href="mailto:arbitercoffee.ph@gmail.com" className="text-decoration-none">
                   arbitercoffee.ph@gmail.com
                 </a>
               </li>
@@ -106,27 +109,27 @@ const Footer = () => {
           </Col>
         </Row>
 
-        <hr className="border-secondary my-4" />
-
         {/* Bottom Footer */}
-        <Row>
-          <Col md={6} className="text-center text-md-start mb-3 mb-md-0">
-            <p className="text-light mb-0">
-              &copy; {currentYear} Arbiter Coffee Hub. All rights reserved.
-            </p>
-          </Col>
-          <Col md={6} className="text-center text-md-end">
-            <Link to="/privacy" className="text-decoration-none text-success me-3">
-              Privacy Policy
-            </Link>
-            <Link to="/terms" className="text-decoration-none text-success">
-              Terms of Service
-            </Link>
-          </Col>
-        </Row>
+        <div className="footer-bottom">
+          <Row className="align-items-center">
+            <Col md={6} className="text-center text-md-start mb-3 mb-md-0">
+              <p className="mb-0" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 'var(--font-size-sm)' }}>
+                &copy; {currentYear} Arbiter Coffee Hub. All rights reserved.
+              </p>
+            </Col>
+            <Col md={6} className="text-center text-md-end">
+              <Link to="/privacy" className="text-decoration-none me-3" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 'var(--font-size-sm)' }}>
+                Privacy Policy
+              </Link>
+              <Link to="/terms" className="text-decoration-none" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 'var(--font-size-sm)' }}>
+                Terms of Service
+              </Link>
+            </Col>
+          </Row>
+        </div>
       </Container>
     </footer>
   );
 };
 
-export default Footer;
+export default React.memo(Footer);

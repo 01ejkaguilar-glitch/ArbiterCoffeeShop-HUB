@@ -38,5 +38,8 @@ class AppServiceProvider extends ServiceProvider
                 return new \Illuminate\Database\SQLiteConnection($connection, $database, $prefix, $config);
             });
         }
+
+        // Note: Spatie UnauthorizedException handler removed — package not installed.
+        // Re-add when spatie/laravel-permission is required.
     }
 }

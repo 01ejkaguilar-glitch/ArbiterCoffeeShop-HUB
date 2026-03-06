@@ -1,260 +1,350 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Badge, Modal, Form, Alert, Spinner, Table } from 'react-bootstrap';
-import { FaStar, FaPlus, FaEdit, FaTrash, FaCoffee, FaCalendarAlt, FaEye } from 'react-icons/fa';
-import { useAuth } from '../../context/AuthContext';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  FaStar, FaPlus, FaEdit, FaTrash, FaCoffee, FaCalendarAlt,
+  FaClock, FaMapMarkerAlt, FaSpinner, FaExclamationTriangle,
+} from 'react-icons/fa';
+import './TodaysOriginManagement.css';
 import { API_ENDPOINTS } from '../../config/api';
 import apiService from '../../services/api.service';
 import { useNotificationSystem } from '../../components/common/NotificationSystem';
 
-const TodaysOriginManagement = () => {
-  const { user } = useAuth();
-  const { showSuccessNotification, showErrorNotification } = useNotificationSystem();
-  const [featuredOrigins, setFeaturedOrigins] = useState([]);
-  const [availableBeans, setAvailableBeans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingOrigin, setEditingOrigin] = useState(null);
-  const [formData, setFormData] = useState({
-    coffee_bean_id: '',
-    feature_date: new Date().toISOString().split('T')[0],
-    start_time: '09:00',
-    end_time: '21:00',
-    special_notes: '',
-    promotion_text: ''
-  });
+/* ── Helpers ──────────────────────────────────────────────── */
+const todayStr = () => new Date().toISOString().split('T')[0];
 
+/** Format H:i or H:i:s → "9:00 AM" */
+const fmtTime = (t) => {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const h12 = hour % 12 || 12;
+  return `${h12}:${m} ${ampm}`;
+};
+
+/** Strip seconds from H:i:s → H:i for <input type="time"> */
+const toTimeInput = (t) => (t ? t.slice(0, 5) : '');
+
+const EMPTY_FORM = {
+  coffee_bean_id: '',
+  feature_date: todayStr(),
+  start_time: '09:00',
+  end_time: '21:00',
+  special_notes: '',
+  promotion_text: '',
+  is_active: true,
+};
+
+/* ── Reusable modal wrapper ───────────────────────────────── */
+function Modal({ open, onClose, children, size }) {
+  const ref = useRef();
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!open) return;
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div
+      className="tom-overlay"
+      ref={ref}
+      onClick={(e) => { if (e.target === ref.current) onClose(); }}
+    >
+      <div className={`tom-dialog${size ? ` ${size}` : ''}`}>{children}</div>
+    </div>
+  );
+}
 
-  const fetchData = async () => {
+/* ════════════════════════════════════════════════════════════
+   Main component
+   ════════════════════════════════════════════════════════════ */
+const TodaysOriginManagement = () => {
+  const { showSuccessNotification, showErrorNotification } = useNotificationSystem();
+
+  const [featuredOrigins, setFeaturedOrigins] = useState([]);
+  const [availableBeans, setAvailableBeans]   = useState([]);
+  const [loading, setLoading]                 = useState(true);
+  const [saving, setSaving]                   = useState(false);
+  const [deleting, setDeleting]               = useState(false);
+
+  const [showFormModal, setShowFormModal]     = useState(false);
+  const [editingOrigin, setEditingOrigin]     = useState(null);
+  const [formData, setFormData]               = useState({ ...EMPTY_FORM });
+
+  const [deleteTarget, setDeleteTarget]       = useState(null); // origin to confirm-delete
+
+  /* ── Date filter ───────────────────────────────────────── */
+  const [filterDate, setFilterDate]           = useState('');
+  const [byDateOrigins, setByDateOrigins]     = useState([]);
+  const [loadingByDate, setLoadingByDate]     = useState(false);
+
+  /* ── Fetch ─────────────────────────────────────────────── */
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [originsResponse, beansResponse] = await Promise.all([
+      const [originsRes, beansRes] = await Promise.all([
         apiService.get(API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.LIST),
-        apiService.get(API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.AVAILABLE_BEANS)
+        apiService.get(API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.AVAILABLE_BEANS),
       ]);
 
-      setFeaturedOrigins(originsResponse.data);
-      setAvailableBeans(beansResponse.data);
-    } catch (err) {
-      console.error('Error fetching data:', err);
+      const origins = originsRes.data?.data ?? originsRes.data ?? [];
+      const beans   = beansRes.data?.data   ?? beansRes.data   ?? [];
+
+      setFeaturedOrigins(Array.isArray(origins) ? origins : []);
+      setAvailableBeans(Array.isArray(beans) ? beans : []);
+    } catch {
       showErrorNotification('Failed to load featured origins data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [showErrorNotification]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  useEffect(() => { fetchData(); }, [fetchData]);
 
+  /* ── Derived lists ─────────────────────────────────────── */
+  const today = todayStr();
+
+  const todaysFeatured = featuredOrigins.filter(o => {
+    const d = o.feature_date?.slice?.(0, 10) ?? o.feature_date;
+    return d === today;
+  });
+
+  const scheduledOrigins = featuredOrigins
+    .filter(o => {
+      const d = o.feature_date?.slice?.(0, 10) ?? o.feature_date;
+      return d >= today;
+    })
+    .sort((a, b) => {
+      const da = a.feature_date?.slice?.(0, 10) ?? a.feature_date;
+      const db = b.feature_date?.slice?.(0, 10) ?? b.feature_date;
+      return da < db ? -1 : da > db ? 1 : 0;
+    });
+
+  /* ── Fetch by specific date ────────────────────────────── */
+  const fetchByDate = useCallback(async (date) => {
+    if (!date) { setByDateOrigins([]); return; }
+    setLoadingByDate(true);
     try {
-      const data = {
+      const res = await apiService.get(`${API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.BY_DATE}?date=${date}`);
+      const data = res.data?.data ?? res.data ?? [];
+      setByDateOrigins(Array.isArray(data) ? data : []);
+    } catch {
+      showErrorNotification('Failed to load origins for selected date');
+    } finally {
+      setLoadingByDate(false);
+    }
+  }, [showErrorNotification]);
+
+  const handleFilterDateChange = useCallback((e) => {
+    const date = e.target.value;
+    setFilterDate(date);
+    fetchByDate(date);
+  }, [fetchByDate]);
+
+  const closeFormModal = useCallback(() => {
+    setShowFormModal(false);
+    setEditingOrigin(null);
+    setFormData({ ...EMPTY_FORM });
+  }, []);
+
+  /* ── Save (create / update) ────────────────────────────── */
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
         ...formData,
-        coffee_bean_id: parseInt(formData.coffee_bean_id)
+        coffee_bean_id: parseInt(formData.coffee_bean_id, 10),
       };
 
       if (editingOrigin) {
-        await apiService.put(API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.UPDATE(editingOrigin.id), data);
+        await apiService.put(
+          API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.UPDATE(editingOrigin.id),
+          payload,
+        );
         showSuccessNotification('Featured origin updated successfully');
       } else {
-        await apiService.post(API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.CREATE, data);
-        showSuccessNotification('Featured origin created successfully');
+        await apiService.post(API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.CREATE, payload);
+        showSuccessNotification('Featured origin scheduled successfully');
       }
 
-      fetchData();
-      resetForm();
-      setShowCreateModal(false);
-      setEditingOrigin(null);
+      await fetchData();
+      closeFormModal();
     } catch (err) {
-      console.error('Error saving featured origin:', err);
-      showErrorNotification('Failed to save featured origin');
+      const msg = err?.response?.data?.message || 'Failed to save featured origin';
+      showErrorNotification(msg);
+    } finally {
+      setSaving(false);
     }
-  };
+  }, [formData, editingOrigin, fetchData, closeFormModal, showSuccessNotification, showErrorNotification]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this featured origin?')) return;
-
+  /* ── Delete ─────────────────────────────────────────────── */
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await apiService.delete(API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.DELETE(id));
-      showSuccessNotification('Featured origin deleted successfully');
-      fetchData();
-    } catch (err) {
-      console.error('Error deleting featured origin:', err);
-      showErrorNotification('Failed to delete featured origin');
+      await apiService.delete(
+        API_ENDPOINTS.BARISTA.FEATURED_ORIGINS.DELETE(deleteTarget.id),
+      );
+      showSuccessNotification('Featured origin removed');
+      await fetchData();
+      setDeleteTarget(null);
+    } catch {
+      showErrorNotification('Failed to remove featured origin');
+    } finally {
+      setDeleting(false);
     }
-  };
+  }, [deleteTarget, fetchData, showSuccessNotification, showErrorNotification]);
 
-  const resetForm = () => {
-    setFormData({
-      coffee_bean_id: '',
-      feature_date: new Date().toISOString().split('T')[0],
-      start_time: '09:00',
-      end_time: '21:00',
-      special_notes: '',
-      promotion_text: ''
-    });
-  };
+  /* ── Form helpers ───────────────────────────────────────── */
+  const openCreateModal = useCallback(() => {
+    setEditingOrigin(null);
+    setFormData({ ...EMPTY_FORM });
+    setShowFormModal(true);
+  }, []);
 
-  const openEditModal = (origin) => {
+  const openEditModal = useCallback((origin) => {
     setEditingOrigin(origin);
     setFormData({
-      coffee_bean_id: origin.coffee_bean_id.toString(),
-      feature_date: origin.feature_date,
-      start_time: origin.start_time || '09:00',
-      end_time: origin.end_time || '21:00',
-      special_notes: origin.special_notes || '',
-      promotion_text: origin.promotion_text || ''
+      coffee_bean_id: String(origin.coffee_bean_id),
+      feature_date:   origin.feature_date?.slice?.(0, 10) ?? origin.feature_date,
+      start_time:     toTimeInput(origin.start_time) || '09:00',
+      end_time:       toTimeInput(origin.end_time)   || '21:00',
+      special_notes:  origin.special_notes   || '',
+      promotion_text: origin.promotion_text  || '',
+      is_active:      origin.is_active ?? true,
     });
-    setShowCreateModal(true);
-  };
+    setShowFormModal(true);
+  }, []);
 
-  const getTodaysFeatured = () => {
-    const today = new Date().toISOString().split('T')[0];
-    return featuredOrigins.filter(origin =>
-      origin.feature_date === today && origin.is_active
-    );
-  };
+  const setField = (key) => (e) =>
+    setFormData(p => ({ ...p, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
 
-  const getUpcomingFeatured = () => {
-    const today = new Date();
-    return featuredOrigins.filter(origin => {
-      const featureDate = new Date(origin.feature_date);
-      return featureDate >= today && origin.is_active;
-    }).sort((a, b) => new Date(a.feature_date) - new Date(b.feature_date));
-  };
-
+  /* ── Render ─────────────────────────────────────────────── */
   if (loading) {
     return (
-      <Container className="py-5 text-center">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-        <p className="mt-3">Loading featured origins...</p>
-      </Container>
+      <div className="tom-page">
+        <div className="tom-spinner-wrap">
+          <FaSpinner className="tom-spin" size={28} />
+          <span>Loading featured origins…</span>
+        </div>
+      </div>
     );
   }
 
-  const todaysFeatured = getTodaysFeatured();
-  const upcomingFeatured = getUpcomingFeatured();
-
   return (
-    <Container className="py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="tom-page">
+      {/* Top bar */}
+      <div className="tom-topbar">
         <div>
-          <h1 className="mb-1">Today's Origin Management</h1>
-          <p className="text-muted mb-0">Schedule and manage featured coffee bean origins</p>
+          <h1 className="tom-title">Today's Origin Management</h1>
+          <p className="tom-subtitle">Schedule and manage featured coffee bean origins</p>
         </div>
-        <div>
-          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
-            <FaPlus className="me-1" />
-            Schedule New Feature
-          </Button>
+        <button className="tom-btn primary" onClick={openCreateModal}>
+          <FaPlus size={12} />
+          Schedule New Feature
+        </button>
+      </div>
+
+      {/* ── Today's featured ── */}
+      <div className="tom-section">
+        <div className="tom-section-head amber">
+          <FaStar className="tom-section-icon" />
+          <h2>Today's Featured Origins</h2>
+          <span className="tom-count-badge">{todaysFeatured.length} active</span>
+        </div>
+        <div className="tom-section-body">
+          {todaysFeatured.length === 0 ? (
+            <div className="tom-empty">
+              <FaCoffee size={36} />
+              <p>No featured origin scheduled for today.</p>
+              <p>Use "Schedule New Feature" to highlight a special origin.</p>
+            </div>
+          ) : (
+            <div className="tom-featured-grid">
+              {todaysFeatured.map(origin => (
+                <div className="tom-featured-card" key={origin.id}>
+                  <div className="tom-featured-card-head">
+                    <div>
+                      <p className="tom-bean-name">{origin.coffeeBean?.name || origin.coffee_bean?.name}</p>
+                      <span className="tom-bean-origin">
+                        <FaMapMarkerAlt size={10} />
+                        {[origin.coffeeBean?.origin_country || origin.coffee_bean?.origin_country,
+                          origin.coffeeBean?.region         || origin.coffee_bean?.region]
+                          .filter(Boolean).join(' • ')}
+                      </span>
+                    </div>
+                    {origin.is_active
+                      ? <span className="tom-active-badge">Active</span>
+                      : <span className="tom-inactive-badge">Inactive</span>}
+                  </div>
+
+                  <div className="tom-time-row">
+                    <FaClock size={11} />
+                    {fmtTime(origin.start_time)} – {fmtTime(origin.end_time)}
+                  </div>
+
+                  {origin.special_notes && (
+                    <div className="tom-notes-box">{origin.special_notes}</div>
+                  )}
+                  {origin.promotion_text && (
+                    <div className="tom-promo-box">{origin.promotion_text}</div>
+                  )}
+
+                  <div className="tom-card-actions">
+                    <button className="tom-btn secondary sm" onClick={() => openEditModal(origin)}>
+                      <FaEdit size={11} /> Edit
+                    </button>
+                    <button className="tom-btn danger sm" onClick={() => setDeleteTarget(origin)}>
+                      <FaTrash size={11} /> Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Today's Featured */}
-      <Card className="mb-4">
-        <Card.Header className="bg-warning text-dark">
-          <h5 className="mb-0">
-            <FaStar className="me-2" />
-            Today's Featured Origins ({todaysFeatured.length}/2)
-          </h5>
-        </Card.Header>
-        <Card.Body>
-          {todaysFeatured.length === 0 ? (
-            <Alert variant="info">
-              <FaCoffee className="me-2" />
-              No coffee beans are featured today. Schedule some to highlight special origins!
-            </Alert>
-          ) : (
-            <Row>
-              {todaysFeatured.map(origin => (
-                <Col md={6} key={origin.id} className="mb-3">
-                  <Card className="border-warning">
-                    <Card.Body>
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                          <h6 className="mb-1">
-                            <FaCoffee className="me-2 text-warning" />
-                            {origin.coffee_bean?.name}
-                          </h6>
-                          <small className="text-muted">
-                            {origin.coffee_bean?.origin_country} • {origin.coffee_bean?.region}
-                          </small>
-                        </div>
-                        <Badge bg="warning">
-                          <FaStar className="me-1" />
-                          Featured Today
-                        </Badge>
-                      </div>
-
-                      <div className="mb-2">
-                        <small>
-                          <strong>Time:</strong> {origin.start_time} - {origin.end_time}
-                        </small>
-                      </div>
-
-                      {origin.special_notes && (
-                        <div className="mb-2">
-                          <small>
-                            <strong>Notes:</strong> {origin.special_notes}
-                          </small>
-                        </div>
-                      )}
-
-                      {origin.promotion_text && (
-                        <Alert variant="warning" className="py-2 mb-2">
-                          <small>
-                            <strong>Promotion:</strong> {origin.promotion_text}
-                          </small>
-                        </Alert>
-                      )}
-
-                      <div className="d-flex gap-2">
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          onClick={() => openEditModal(origin)}
-                        >
-                          <FaEdit className="me-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => handleDelete(origin.id)}
-                        >
-                          <FaTrash className="me-1" />
-                          Remove
-                        </Button>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          )}
-        </Card.Body>
-      </Card>
-
-      {/* Upcoming Features */}
-      <Card className="mb-4">
-        <Card.Header>
-          <h5 className="mb-0">
-            <FaCalendarAlt className="me-2" />
-            Upcoming Featured Origins
-          </h5>
-        </Card.Header>
-        <Card.Body className="p-0">
-          {upcomingFeatured.length === 0 ? (
-            <div className="text-center py-4">
-              <FaCalendarAlt size={48} className="text-muted mb-3" />
-              <p className="text-muted">No upcoming featured origins scheduled</p>
-            </div>
-          ) : (
-            <Table striped hover className="mb-0">
-              <thead className="table-light">
+      {/* ── Scheduled / upcoming table ── */}
+      <div className="tom-section">
+        <div className="tom-section-head">
+          <FaCalendarAlt className="tom-section-icon green" />
+          <h2>Scheduled Featured Origins</h2>
+          <span className="tom-count-badge" style={{ background: 'var(--color-success-bg)', color: 'var(--color-dark-green)', borderColor: 'var(--color-info-border)' }}>
+            {filterDate ? byDateOrigins.length : scheduledOrigins.length} {filterDate ? 'found' : 'upcoming'}
+          </span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <label htmlFor="tom-date-filter" style={{ fontSize: '.8rem', color: '#555', marginBottom: 0 }}>Filter by date:</label>
+            <input
+              id="tom-date-filter"
+              type="date"
+              value={filterDate}
+              onChange={handleFilterDateChange}
+              style={{ fontSize: '.85rem', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #ccc' }}
+            />
+            {filterDate && (
+              <button
+                className="tom-btn secondary sm"
+                onClick={() => { setFilterDate(''); setByDateOrigins([]); }}
+                title="Clear filter"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+        {loadingByDate ? (
+          <div className="tom-empty"><FaSpinner className="tom-spin" size={24} /><p>Loading…</p></div>
+        ) : (filterDate ? byDateOrigins : scheduledOrigins).length === 0 ? (
+          <div className="tom-empty">
+            <FaCalendarAlt size={36} />
+            <p>{filterDate ? `No featured origins scheduled for ${filterDate}.` : 'No upcoming featured origins scheduled.'}</p>
+          </div>
+        ) : (
+          <div className="tom-table-wrap">
+            <table className="tom-table">
+              <thead>
                 <tr>
                   <th>Date</th>
                   <th>Coffee Bean</th>
@@ -265,146 +355,207 @@ const TodaysOriginManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {upcomingFeatured.map(origin => (
-                  <tr key={origin.id}>
-                    <td>
-                      <strong>{new Date(origin.feature_date).toLocaleDateString()}</strong>
-                    </td>
-                    <td>{origin.coffee_bean?.name}</td>
-                    <td>
-                      <small>{origin.coffee_bean?.origin_country}, {origin.coffee_bean?.region}</small>
-                    </td>
-                    <td>
-                      <small>{origin.start_time} - {origin.end_time}</small>
-                    </td>
-                    <td>
-                      <Badge bg={origin.is_active ? 'success' : 'secondary'}>
-                        {origin.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </td>
-                    <td>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => openEditModal(origin)}
-                        className="me-1"
-                      >
-                        <FaEdit />
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => handleDelete(origin.id)}
-                      >
-                        <FaTrash />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                {(filterDate ? byDateOrigins : scheduledOrigins).map(origin => {
+                  const dateStr = origin.feature_date?.slice?.(0, 10) ?? origin.feature_date;
+                  const isToday = dateStr === today;
+                  return (
+                    <tr key={origin.id}>
+                      <td className={`tom-date-cell${isToday ? ' tom-date-today' : ''}`}>
+                        {new Date(dateStr + 'T00:00:00').toLocaleDateString('en-PH', {
+                          month: 'short', day: 'numeric', year: 'numeric',
+                        })}
+                        {isToday && <span style={{ fontSize: '.7rem', marginLeft: '.35rem' }}>(Today)</span>}
+                      </td>
+                      <td style={{ fontWeight: 600 }}>
+                        {origin.coffeeBean?.name || origin.coffee_bean?.name || '—'}
+                      </td>
+                      <td className="tom-origin-text">
+                        {[origin.coffeeBean?.origin_country || origin.coffee_bean?.origin_country,
+                          origin.coffeeBean?.region         || origin.coffee_bean?.region]
+                          .filter(Boolean).join(', ') || '—'}
+                      </td>
+                      <td className="tom-time-cell">
+                        {fmtTime(origin.start_time)} – {fmtTime(origin.end_time)}
+                      </td>
+                      <td>
+                        {origin.is_active
+                          ? <span className="tom-status-active">Active</span>
+                          : <span className="tom-status-inactive">Inactive</span>}
+                      </td>
+                      <td>
+                        <div className="tom-row-actions">
+                          <button className="tom-btn secondary sm" onClick={() => openEditModal(origin)} title="Edit">
+                            <FaEdit size={11} />
+                          </button>
+                          <button className="tom-btn danger sm" onClick={() => setDeleteTarget(origin)} title="Remove">
+                            <FaTrash size={11} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
-            </Table>
-          )}
-        </Card.Body>
-      </Card>
+            </table>
+          </div>
+        )}
+      </div>
 
-      {/* Create/Edit Modal */}
-      <Modal show={showCreateModal} onHide={() => { setShowCreateModal(false); setEditingOrigin(null); resetForm(); }} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>
+      {/* ═══════════════════════════════════════════════════════
+          Schedule / Edit modal
+          ═══════════════════════════════════════════════════ */}
+      <Modal open={showFormModal} onClose={closeFormModal}>
+        <div className="tom-dialog-head">
+          <h2 className="tom-dialog-title">
             {editingOrigin ? 'Edit Featured Origin' : 'Schedule New Featured Origin'}
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleSubmit}>
-          <Modal.Body>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Coffee Bean *</Form.Label>
-                  <Form.Select
-                    value={formData.coffee_bean_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, coffee_bean_id: e.target.value }))}
-                    required
-                  >
-                    <option value="">Select a coffee bean...</option>
-                    {availableBeans.map(bean => (
-                      <option key={bean.id} value={bean.id}>
-                        {bean.name} - {bean.origin_country}, {bean.region}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
+          </h2>
+          <button className="tom-dialog-close" onClick={closeFormModal}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="tom-dialog-body">
+            <div className="tom-form-grid">
+              {/* Coffee Bean */}
+              <div className="tom-form-group span2">
+                <label className="tom-label">Coffee Bean <span>*</span></label>
+                <select
+                  className="tom-select"
+                  value={formData.coffee_bean_id}
+                  onChange={setField('coffee_bean_id')}
+                  required
+                >
+                  <option value="">Select a coffee bean…</option>
+                  {availableBeans.map(bean => (
+                    <option key={bean.id} value={bean.id}>
+                      {bean.name} – {bean.origin_country}{bean.region ? `, ${bean.region}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Feature Date *</Form.Label>
-                  <Form.Control
-                    type="date"
-                    value={formData.feature_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, feature_date: e.target.value }))}
-                    required
+              {/* Feature Date */}
+              <div className="tom-form-group">
+                <label className="tom-label">Feature Date <span>*</span></label>
+                <input
+                  className="tom-input"
+                  type="date"
+                  value={formData.feature_date}
+                  min={editingOrigin ? undefined : todayStr()}
+                  onChange={setField('feature_date')}
+                  required
+                />
+              </div>
+
+              {/* is_active toggle */}
+              <div className="tom-form-group" style={{ justifyContent: 'center' }}>
+                <label className="tom-label">Status</label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '.5rem', cursor: 'pointer', marginTop: '.3rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={formData.is_active}
+                    onChange={setField('is_active')}
+                    style={{ width: '16px', height: '16px' }}
                   />
-                </Form.Group>
-              </Col>
-            </Row>
+                  <span style={{ fontSize: '.85rem', color: '#374151' }}>Active (visible to customers)</span>
+                </label>
+              </div>
 
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Start Time</Form.Label>
-                  <Form.Control
-                    type="time"
-                    value={formData.start_time}
-                    onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
-                  />
-                </Form.Group>
-              </Col>
+              {/* Start Time */}
+              <div className="tom-form-group">
+                <label className="tom-label">Start Time</label>
+                <input
+                  className="tom-input"
+                  type="time"
+                  value={formData.start_time}
+                  onChange={setField('start_time')}
+                />
+              </div>
 
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>End Time</Form.Label>
-                  <Form.Control
-                    type="time"
-                    value={formData.end_time}
-                    onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
+              {/* End Time */}
+              <div className="tom-form-group">
+                <label className="tom-label">End Time</label>
+                <input
+                  className="tom-input"
+                  type="time"
+                  value={formData.end_time}
+                  onChange={setField('end_time')}
+                />
+              </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Special Notes</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
-                value={formData.special_notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, special_notes: e.target.value }))}
-                placeholder="Any special notes about this coffee bean..."
-              />
-            </Form.Group>
+              {/* Special Notes */}
+              <div className="tom-form-group span2">
+                <label className="tom-label">Special Notes</label>
+                <textarea
+                  className="tom-textarea"
+                  value={formData.special_notes}
+                  onChange={setField('special_notes')}
+                  placeholder="Any special notes about this coffee bean…"
+                />
+                <span className="tom-hint">Max 1,000 characters</span>
+              </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Promotion Text</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
-                value={formData.promotion_text}
-                onChange={(e) => setFormData(prev => ({ ...prev, promotion_text: e.target.value }))}
-                placeholder="Special promotion or highlight text..."
-              />
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => { setShowCreateModal(false); setEditingOrigin(null); resetForm(); }}>
+              {/* Promotion Text */}
+              <div className="tom-form-group span2">
+                <label className="tom-label">Promotion Text</label>
+                <textarea
+                  className="tom-textarea"
+                  value={formData.promotion_text}
+                  onChange={setField('promotion_text')}
+                  placeholder="Special promotion or highlight text…"
+                />
+                <span className="tom-hint">Max 500 characters (shown prominently to customers)</span>
+              </div>
+            </div>
+          </div>
+          <div className="tom-dialog-footer">
+            <button type="button" className="tom-btn secondary" onClick={closeFormModal} disabled={saving}>
               Cancel
-            </Button>
-            <Button variant="primary" type="submit">
-              {editingOrigin ? 'Update Feature' : 'Schedule Feature'}
-            </Button>
-          </Modal.Footer>
-        </Form>
+            </button>
+            <button
+              type="submit"
+              className="tom-btn primary"
+              disabled={saving || !formData.coffee_bean_id || !formData.feature_date}
+            >
+              {saving
+                ? <><FaSpinner className="tom-spin" size={12} /> Saving…</>
+                : editingOrigin ? 'Update Feature' : 'Schedule Feature'}
+            </button>
+          </div>
+        </form>
       </Modal>
-    </Container>
+
+      {/* ═══════════════════════════════════════════════════════
+          Delete confirmation modal
+          ═══════════════════════════════════════════════════ */}
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} size="sm">
+        <div className="tom-dialog-head">
+          <FaExclamationTriangle style={{ color: '#dc2626', flexShrink: 0 }} />
+          <h2 className="tom-dialog-title">Remove Featured Origin</h2>
+          <button className="tom-dialog-close" onClick={() => setDeleteTarget(null)}>✕</button>
+        </div>
+        <div className="tom-dialog-body">
+          <p className="tom-delete-msg">
+            Are you sure you want to remove{' '}
+            <span className="tom-delete-name">
+              {deleteTarget?.coffeeBean?.name || deleteTarget?.coffee_bean?.name}
+            </span>{' '}
+            from the schedule on{' '}
+            {deleteTarget && new Date((deleteTarget.feature_date?.slice?.(0, 10) ?? deleteTarget.feature_date) + 'T00:00:00')
+              .toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}?
+          </p>
+          <p style={{ fontSize: '.8rem', color: '#9ca3af', margin: 0 }}>
+            This action cannot be undone.
+          </p>
+        </div>
+        <div className="tom-dialog-footer">
+          <button className="tom-btn secondary" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+            Cancel
+          </button>
+          <button className="tom-btn danger" onClick={handleDelete} disabled={deleting}>
+            {deleting ? <><FaSpinner className="tom-spin" size={12} /> Removing…</> : 'Yes, Remove'}
+          </button>
+        </div>
+      </Modal>
+    </div>
   );
 };
 

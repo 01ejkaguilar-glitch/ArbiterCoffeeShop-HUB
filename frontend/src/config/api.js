@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
   PRODUCTS: {
     LIST: `${API_BASE_URL}/products`,
     DETAIL: (id) => `${API_BASE_URL}/products/${id}`,
+    RECIPE: (id) => `${API_BASE_URL}/products/${id}/recipe`,
     CREATE: `${API_BASE_URL}/products`,
     UPDATE: (id) => `${API_BASE_URL}/products/${id}`,
     DELETE: (id) => `${API_BASE_URL}/products/${id}`,
@@ -34,6 +35,9 @@ export const API_ENDPOINTS = {
   CATEGORIES: {
     LIST: `${API_BASE_URL}/categories`,
     DETAIL: (id) => `${API_BASE_URL}/categories/${id}`,
+    CREATE: `${API_BASE_URL}/categories`,
+    UPDATE: (id) => `${API_BASE_URL}/categories/${id}`,
+    DELETE: (id) => `${API_BASE_URL}/categories/${id}`,
   },
 
   // Coffee Beans
@@ -67,6 +71,7 @@ export const API_ENDPOINTS = {
     DASHBOARD: `${API_BASE_URL}/customer/dashboard`,
     PROFILE: `${API_BASE_URL}/customer/profile`,
     PROFILE_PICTURE: `${API_BASE_URL}/customer/profile/picture`,
+    CHANGE_PASSWORD: `${API_BASE_URL}/customer/change-password`,
     ANALYTICS: `${API_BASE_URL}/customer/analytics`,
     NOTIFICATIONS: `${API_BASE_URL}/customer/notifications`,
     TASTE_PREFERENCES: `${API_BASE_URL}/customer/taste-preferences`,
@@ -107,6 +112,15 @@ export const API_ENDPOINTS = {
     STATUS: (id) => `${API_BASE_URL}/payments/${id}/status`,
   },
 
+  // Notifications
+  NOTIFICATIONS: {
+    LIST: `${API_BASE_URL}/notifications`,
+    MARK_READ: (id) => `${API_BASE_URL}/notifications/${id}/read`,
+    MARK_ALL_READ: `${API_BASE_URL}/notifications/mark-all-read`,
+    DELETE: (id) => `${API_BASE_URL}/notifications/${id}`,
+    CLEAR_ALL: `${API_BASE_URL}/notifications`,
+  },
+
   // Announcements
   ANNOUNCEMENTS: {
     LIST: `${API_BASE_URL}/announcements`,
@@ -132,6 +146,8 @@ export const API_ENDPOINTS = {
   ADMIN: {
     USERS: `${API_BASE_URL}/admin/users`,
     USER_DETAIL: (id) => `${API_BASE_URL}/admin/users/${id}`,
+    USER_REACTIVATE: (id) => `${API_BASE_URL}/admin/users/${id}/reactivate`,
+    USER_STATISTICS: `${API_BASE_URL}/admin/users/statistics`,
     ORDERS: `${API_BASE_URL}/admin/orders`,
     ORDER_DETAIL: (id) => `${API_BASE_URL}/admin/orders/${id}`,
     ORDER_STATUS: (id) => `${API_BASE_URL}/admin/orders/${id}/status`,
@@ -142,6 +158,11 @@ export const API_ENDPOINTS = {
       CUSTOMERS: `${API_BASE_URL}/admin/analytics/customers`,
       PERFORMANCE: `${API_BASE_URL}/admin/analytics/performance`,
       INVENTORY: `${API_BASE_URL}/admin/analytics/inventory`,
+      CUSTOMER_SEGMENTS: `${API_BASE_URL}/admin/analytics/customer-segments`,
+      BARISTA_PERFORMANCE: `${API_BASE_URL}/admin/analytics/barista-performance`,
+    },
+    PRODUCTS: {
+      LIST: `${API_BASE_URL}/admin/products`,
     },
     INVENTORY: {
       LIST: `${API_BASE_URL}/admin/inventory`,
@@ -165,15 +186,53 @@ export const API_ENDPOINTS = {
       UPDATE: (id) => `${API_BASE_URL}/admin/coffee-beans/${id}`,
       DELETE: (id) => `${API_BASE_URL}/admin/coffee-beans/${id}`,
     },
+    SETTINGS: {
+      TIMELINE: `${API_BASE_URL}/admin/company-timeline`,
+      TEAM: `${API_BASE_URL}/admin/team-members`,
+    },
   },
 
   // Workforce
   WORKFORCE: {
-    INVENTORY: `${API_BASE_URL}/workforce/inventory`,
+    // Employee Management
     EMPLOYEES: `${API_BASE_URL}/workforce/employees`,
+    EMPLOYEE_DETAIL: (id) => `${API_BASE_URL}/workforce/employees/${id}`,
+    EMPLOYEE_STATS: `${API_BASE_URL}/workforce/employees/statistics`,
+
+    // Attendance Management
     ATTENDANCE: `${API_BASE_URL}/workforce/attendance`,
+    ATTENDANCE_MARK: `${API_BASE_URL}/workforce/attendance/mark`,
+    ATTENDANCE_SUMMARY: `${API_BASE_URL}/workforce/attendance/summary`,
+    CLOCK_IN: `${API_BASE_URL}/employee/attendance/clock-in`,
+    CLOCK_OUT: `${API_BASE_URL}/employee/attendance/clock-out`,
+    MY_ATTENDANCE: `${API_BASE_URL}/employee/attendance`,
+
+    // Shift Scheduling
     SHIFTS: `${API_BASE_URL}/workforce/shifts`,
+    SHIFT_DETAIL: (id) => `${API_BASE_URL}/workforce/shifts/${id}`,
+    WEEKLY_SCHEDULE: `${API_BASE_URL}/workforce/shifts/weekly-schedule`,
+    EMPLOYEE_SHIFTS: (id) => `${API_BASE_URL}/workforce/shifts/employee/${id}`,
+    MY_SHIFTS: `${API_BASE_URL}/employee/shifts`,
+
+    // Task Management
     TASKS: `${API_BASE_URL}/workforce/tasks`,
+    TASK_DETAIL: (id) => `${API_BASE_URL}/workforce/tasks/${id}`,
+    MY_TASKS: `${API_BASE_URL}/employee/tasks`,
+    MY_TASK_UPDATE: (id) => `${API_BASE_URL}/employee/tasks/${id}`,
+
+    // Leave Requests
+    LEAVE_REQUESTS: `${API_BASE_URL}/workforce/leave-requests`,
+    LEAVE_REQUEST_DETAIL: (id) => `${API_BASE_URL}/workforce/leave-requests/${id}`,
+
+    // Performance Reviews
+    PERFORMANCE_REVIEWS: `${API_BASE_URL}/workforce/performance/reviews`,
+    PERFORMANCE_REVIEW_DETAIL: (id) => `${API_BASE_URL}/workforce/performance/reviews/${id}`,
+
+    // Inventory (Barista checklist)
+    INVENTORY: `${API_BASE_URL}/barista/inventory`,
+    INVENTORY_ITEM: (id) => `${API_BASE_URL}/barista/inventory/${id}`,
+    INVENTORY_ADJUST: (id) => `${API_BASE_URL}/barista/inventory/${id}/adjust`,
+    INVENTORY_LOW_STOCK: `${API_BASE_URL}/barista/inventory/low-stock/alert`,
   },
 
   // Barista
@@ -200,5 +259,30 @@ export const API_ENDPOINTS = {
       TODAY: `${API_BASE_URL}/barista/featured-origins/today`,
       BY_DATE: `${API_BASE_URL}/barista/featured-origins/by-date`,
     },
+    POS: {
+      PRODUCTS: `${API_BASE_URL}/barista/pos/products`,
+      CREATE_ORDER: `${API_BASE_URL}/barista/pos/orders`,
+      HOLD_ORDER: `${API_BASE_URL}/barista/pos/orders/hold`,
+      HELD_ORDERS: `${API_BASE_URL}/barista/pos/orders/held`,
+      RESUME_HELD: (id) => `${API_BASE_URL}/barista/pos/orders/held/${id}/resume`,
+      VOID_ORDER: (id) => `${API_BASE_URL}/barista/pos/orders/${id}/void`,
+      DAILY_SUMMARY: `${API_BASE_URL}/barista/pos/summary`,
+      RECENT_TRANSACTIONS: `${API_BASE_URL}/barista/pos/transactions`,
+    },
+  },
+
+  // Kitchen Staff
+  KITCHEN: {
+    DASHBOARD: `${API_BASE_URL}/kitchen/dashboard`,
+    ORDER_QUEUE: `${API_BASE_URL}/kitchen/orders/queue`,
+    UPDATE_ORDER: (id) => `${API_BASE_URL}/kitchen/orders/${id}/status`,
+    COMPLETED_ORDERS: `${API_BASE_URL}/kitchen/orders/completed`,
+    PERFORMANCE: `${API_BASE_URL}/kitchen/performance`,
+    SHIFT_CURRENT: `${API_BASE_URL}/kitchen/shift/current`,
+    TASKS_TODAY: `${API_BASE_URL}/kitchen/tasks/today`,
+    INVENTORY: `${API_BASE_URL}/kitchen/inventory`,
+    INVENTORY_ITEM: (id) => `${API_BASE_URL}/kitchen/inventory/${id}`,
+    INVENTORY_ADJUST: (id) => `${API_BASE_URL}/kitchen/inventory/${id}/adjust`,
+    INVENTORY_LOW_STOCK: `${API_BASE_URL}/kitchen/inventory/low-stock/alert`,
   },
 };

@@ -107,7 +107,7 @@ class AnalyticsController extends BaseController
                 ->get();
 
             // Total customers
-            $totalCustomers = User::role('customer')->count();
+            $totalCustomers = User::whereHas('roles', fn($q) => $q->where('name', 'customer'))->count();
 
             $analytics = [
                 'totalRevenue' => (float) $totalSales,
@@ -118,9 +118,9 @@ class AnalyticsController extends BaseController
                 'revenueByCategory' => $revenueByCategory,
                 'ordersByStatus' => $ordersByStatus,
                 'summary' => [
-                    'total_sales' => number_format($totalSales, 2),
+                    'total_sales' => round($totalSales, 2),
                     'total_orders' => $totalOrders,
-                    'average_order_value' => number_format($avgOrderValue, 2),
+                    'average_order_value' => round($avgOrderValue, 2),
                 ],
                 'daily_sales' => $dailySales,
                 'order_type_breakdown' => $orderTypeBreakdown,
@@ -149,21 +149,23 @@ class AnalyticsController extends BaseController
             $startDate = $request->get('start_date', now()->startOfMonth());
             $endDate = $request->get('end_date', now()->endOfMonth());
 
+            $customerScope = fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'customer'));
+
             // Total customers
-            $totalCustomers = User::role('customer')->count();
-            $newCustomers = User::role('customer')
+            $totalCustomers = User::whereHas('roles', fn($q) => $q->where('name', 'customer'))->count();
+            $newCustomers = User::whereHas('roles', fn($q) => $q->where('name', 'customer'))
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
             // Active customers (who placed orders in period)
-            $activeCustomers = User::role('customer')
+            $activeCustomers = User::whereHas('roles', fn($q) => $q->where('name', 'customer'))
                 ->whereHas('orders', function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 })
                 ->count();
 
             // Top customers by spending
-            $topCustomers = User::role('customer')
+            $topCustomers = User::whereHas('roles', fn($q) => $q->where('name', 'customer'))
                 ->select(['users.id', 'users.name', 'users.email'])
                 ->selectRaw('COUNT(orders.id) as order_count')
                 ->selectRaw('SUM(orders.total_amount) as total_spent')
@@ -176,7 +178,7 @@ class AnalyticsController extends BaseController
                 ->get();
 
             // Customer retention (repeat customers)
-            $repeatCustomers = User::role('customer')
+            $repeatCustomers = User::whereHas('roles', fn($q) => $q->where('name', 'customer'))
                 ->whereHas('orders', function ($query) use ($startDate, $endDate) {
                     $query->whereBetween('created_at', [$startDate, $endDate]);
                 }, '>', 1)
@@ -195,8 +197,8 @@ class AnalyticsController extends BaseController
                     'new_customers' => $newCustomers,
                     'active_customers' => $activeCustomers,
                     'repeat_customers' => $repeatCustomers,
-                    'retention_rate' => number_format($retentionRate, 2) . '%',
-                    'avg_order_frequency' => number_format($avgOrderFrequency, 2),
+                    'retention_rate' => round($retentionRate, 2),
+                    'avg_order_frequency' => round($avgOrderFrequency, 2),
                 ],
                 'top_customers' => $topCustomers,
                 'date_range' => [
@@ -223,21 +225,31 @@ class AnalyticsController extends BaseController
             $startDate = $request->get('start_date', now()->startOfMonth());
             $endDate = $request->get('end_date', now()->endOfMonth());
 
-            // Employee performance
-            $employeePerformance = Employee::select('employees.*')
-                ->selectRaw('COUNT(DISTINCT orders.id) as orders_processed')
-                ->selectRaw('COUNT(DISTINCT attendances.id) as days_worked')
-                ->leftJoin('users', 'employees.user_id', '=', 'users.id')
-                ->leftJoin('orders', function ($join) use ($startDate, $endDate) {
-                    $join->on('users.id', '=', 'orders.user_id')
-                        ->whereBetween('orders.created_at', [$startDate, $endDate]);
-                })
-                ->leftJoin('attendances', function ($join) use ($startDate, $endDate) {
-                    $join->on('employees.id', '=', 'attendances.employee_id')
-                        ->whereBetween('attendances.date', [$startDate, $endDate]);
-                })
-                ->groupBy('employees.id')
-                ->get();
+            // Employee performance — batch aggregate queries instead of N+1
+            $employees = Employee::with('user')->get();
+
+            // Batch: orders processed per employee (by user_id)
+            $orderCounts = DB::table('orders')
+                ->whereIn('user_id', $employees->pluck('user_id'))
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->selectRaw('user_id, COUNT(*) as order_count')
+                ->groupBy('user_id')
+                ->pluck('order_count', 'user_id');
+
+            // Batch: days worked per employee
+            $attendanceCounts = DB::table('attendances')
+                ->whereIn('employee_id', $employees->pluck('id'))
+                ->whereBetween('date', [$startDate, $endDate])
+                ->selectRaw('employee_id, COUNT(*) as days_count')
+                ->groupBy('employee_id')
+                ->pluck('days_count', 'employee_id');
+
+            $employeePerformance = $employees->map(function ($employee) use ($orderCounts, $attendanceCounts) {
+                return array_merge($employee->toArray(), [
+                    'orders_processed' => $orderCounts->get($employee->user_id, 0),
+                    'days_worked'      => $attendanceCounts->get($employee->id, 0),
+                ]);
+            });
 
             // Attendance statistics
             $totalScheduledDays = Attendance::whereBetween('date', [$startDate, $endDate])->count();
@@ -256,8 +268,8 @@ class AnalyticsController extends BaseController
             $analytics = [
                 'summary' => [
                     'total_employees' => Employee::where('status', 'active')->count(),
-                    'attendance_rate' => number_format($attendanceRate, 2) . '%',
-                    'avg_completion_time' => $avgCompletionTime->avg_minutes ? number_format($avgCompletionTime->avg_minutes, 2) . ' minutes' : 'N/A',
+                    'attendance_rate' => round($attendanceRate, 2),
+                    'avg_completion_time' => $avgCompletionTime->avg_minutes ? round($avgCompletionTime->avg_minutes, 2) : null,
                 ],
                 'employee_performance' => $employeePerformance,
                 'date_range' => [
@@ -334,7 +346,11 @@ class AnalyticsController extends BaseController
             $endDate = $request->input('end_date') ?? Carbon::now()->toDateString();
             $employeeId = $request->input('employee_id');
 
-            $query = Employee::with(['user', 'performanceReviews', 'attendances'])
+            $query = Employee::with([
+                    'user',
+                    'performanceReviews' => fn($q) => $q->whereBetween('review_date', [$startDate, $endDate]),
+                    'attendances' => fn($q) => $q->whereBetween('date', [$startDate, $endDate]),
+                ])
                 ->where('position', 'barista')
                 ->orWhere('position', 'senior_barista');
 
@@ -344,11 +360,16 @@ class AnalyticsController extends BaseController
 
             $employees = $query->get();
 
-            $performanceData = $employees->map(function ($employee) use ($startDate, $endDate) {
-                // Get performance reviews in date range
-                $reviews = $employee->performanceReviews()
-                    ->whereBetween('review_date', [$startDate, $endDate])
-                    ->get();
+            // Batch-load shifts for all employees in one query
+            $employeeIds = $employees->pluck('id');
+            $allShifts = Shift::whereIn('employee_id', $employeeIds)
+                ->whereBetween('date', [$startDate, $endDate])
+                ->get()
+                ->groupBy('employee_id');
+
+            $performanceData = $employees->map(function ($employee) use ($allShifts) {
+                // Use eager-loaded reviews (already filtered by date range)
+                $reviews = $employee->performanceReviews;
 
                 // Calculate average scores
                 $avgScores = [
@@ -360,10 +381,8 @@ class AnalyticsController extends BaseController
                     'overall_score' => $reviews->avg('overall_score') ?? 0,
                 ];
 
-                // Get attendance metrics
-                $attendances = $employee->attendances()
-                    ->whereBetween('date', [$startDate, $endDate])
-                    ->get();
+                // Use eager-loaded attendances (already filtered by date range)
+                $attendances = $employee->attendances;
 
                 $attendanceMetrics = [
                     'total_days' => $attendances->count(),
@@ -375,10 +394,8 @@ class AnalyticsController extends BaseController
                         : 0,
                 ];
 
-                // Get shift metrics
-                $shifts = Shift::where('employee_id', $employee->id)
-                    ->whereBetween('date', [$startDate, $endDate])
-                    ->get();
+                // Use batch-loaded shifts
+                $shifts = $allShifts->get($employee->id, collect());
 
                 $shiftMetrics = [
                     'total_shifts' => $shifts->count(),
@@ -388,7 +405,7 @@ class AnalyticsController extends BaseController
 
                 return [
                     'employee_id' => $employee->id,
-                    'employee_name' => $employee->user->name,
+                    'employee_name' => $employee->user?->name ?? 'Unknown',
                     'employee_number' => $employee->employee_number,
                     'position' => $employee->position,
                     'average_scores' => $avgScores,
@@ -799,7 +816,7 @@ class AnalyticsController extends BaseController
     public function getCustomerSegments(Request $request)
     {
         try {
-            $customers = User::role('customer')
+            $customers = User::whereHas('roles', fn($q) => $q->where('name', 'customer'))
                 ->with(['orders' => function ($q) {
                     $q->where('status', 'completed');
                 }])
@@ -904,7 +921,7 @@ class AnalyticsController extends BaseController
             $startDate = $request->input('start_date') ?? Carbon::now()->subDays(90)->toDateString();
             $endDate = $request->input('end_date') ?? Carbon::now()->toDateString();
 
-            $customers = User::role('customer')
+            $customers = User::whereHas('roles', fn($q) => $q->where('name', 'customer'))
                 ->with(['orders' => function ($q) use ($startDate, $endDate) {
                     $q->where('status', 'completed')
                         ->whereBetween('created_at', [$startDate, $endDate]);

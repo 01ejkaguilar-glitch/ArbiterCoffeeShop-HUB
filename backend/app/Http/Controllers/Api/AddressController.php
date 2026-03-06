@@ -156,7 +156,7 @@ class AddressController extends BaseController
                 }
             }
 
-            return $this->sendResponse(null, 'Address deleted successfully', 204);
+            return $this->sendResponse(null, 'Address deleted successfully');
 
         } catch (\Exception $e) {
             return $this->sendError('Failed to delete address', 500, ['error' => $e->getMessage()]);

@@ -1,0 +1,676 @@
+/* ════════════════════════════════════════════════════
+   CoffeeBeanControl.css  —  cbc-* design system
+   Brand: var(--color-dark-green) dark-green  | var(--color-medium-green) med-green
+          #9B6B00 amber       | #3D1C02 espresso
+          #C41E3A danger      | #1A1A1A text
+   ════════════════════════════════════════════════════ */
+
+/* ── Page Shell ───────────────────────────────────── */
+.cbc-page {
+  padding: 1.25rem 1.5rem;
+  min-height: 100vh;
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Top Bar ──────────────────────────────────────── */
+.cbc-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.cbc-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #1A1A1A;
+  margin: 0;
+  letter-spacing: -.02em;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+.cbc-title svg { color: var(--color-dark-green); }
+
+.cbc-subtitle {
+  font-size: .82rem;
+  color: #6b7280;
+  margin: .15rem 0 0;
+}
+
+.cbc-topbar-actions { display: flex; align-items: center; gap: .6rem; }
+
+/* ── Tabs ─────────────────────────────────────────── */
+.cbc-tabs {
+  display: flex;
+  gap: .25rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0;
+}
+
+.cbc-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .6rem 1.1rem;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: .87rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 6px 6px 0 0;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.cbc-tab-btn:hover { color: var(--color-dark-green); background: #f0fdf4; }
+.cbc-tab-btn.active { color: var(--color-dark-green); border-bottom-color: var(--color-dark-green); background: #f0fdf4; }
+.cbc-tab-count {
+  background: #e5e7eb;
+  color: #374151;
+  border-radius: 99px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: .72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.cbc-tab-btn.active .cbc-tab-count { background: var(--color-dark-green); color: #fff; }
+
+/* ── Search Row ───────────────────────────────────── */
+.cbc-search-row {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cbc-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+}
+.cbc-search-icon {
+  position: absolute;
+  left: .75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+.cbc-search-input {
+  width: 100%;
+  padding: .52rem .85rem .52rem 2.35rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: .85rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  transition: border-color .15s, box-shadow .15s;
+}
+.cbc-search-input:focus {
+  outline: none;
+  border-color: var(--color-dark-green);
+  box-shadow: 0 0 0 3px rgba(0,104,55,.1);
+}
+
+.cbc-search-clear {
+  position: absolute;
+  right: .6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: #e5e7eb;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: .75rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cbc-search-clear:hover { background: #d1d5db; }
+
+/* ── Buttons ──────────────────────────────────────── */
+.cbc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .48rem 1rem;
+  border-radius: 10px;
+  font-size: .83rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background .13s, opacity .13s, box-shadow .13s;
+  white-space: nowrap;
+}
+.cbc-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.cbc-btn.primary   { background: var(--color-dark-green); color: #fff; }
+.cbc-btn.primary:not(:disabled):hover   { background: #005a2f; box-shadow: 0 3px 10px rgba(0,104,55,.3); }
+
+.cbc-btn.success   { background: var(--color-medium-green); color: #fff; }
+.cbc-btn.success:not(:disabled):hover   { background: #007d3a; box-shadow: 0 3px 10px rgba(0,146,69,.3); }
+
+.cbc-btn.amber     { background: #9B6B00; color: #fff; }
+.cbc-btn.amber:not(:disabled):hover     { background: #7c5500; box-shadow: 0 3px 10px rgba(155,107,0,.3); }
+
+.cbc-btn.danger    { background: #C41E3A; color: #fff; }
+.cbc-btn.danger:not(:disabled):hover    { background: #a6172f; box-shadow: 0 3px 10px rgba(196,30,58,.3); }
+
+.cbc-btn.secondary { background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+.cbc-btn.secondary:not(:disabled):hover { background: #e5e7eb; }
+
+.cbc-btn.ghost     { background: transparent; color: var(--color-dark-green); border: 1.5px solid var(--color-dark-green); }
+.cbc-btn.ghost:not(:disabled):hover     { background: #f0fdf4; }
+
+.cbc-btn.sm { padding: .32rem .72rem; font-size: .77rem; border-radius: 8px; }
+
+/* ── Bean Grid ────────────────────────────────────── */
+.cbc-bean-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+
+/* ── Bean Card ────────────────────────────────────── */
+.cbc-bean-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow .15s, transform .15s;
+}
+.cbc-bean-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.1); transform: translateY(-2px); }
+
+.cbc-bean-img-wrap {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+.cbc-bean-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cbc-bean-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3D1C02 0%, #6B3D1E 100%);
+  color: rgba(255,255,255,.35);
+  font-size: 3.5rem;
+}
+.cbc-bean-featured-tag {
+  position: absolute;
+  top: .6rem;
+  right: .6rem;
+  background: #9B6B00;
+  color: #fff;
+  padding: .2rem .6rem;
+  border-radius: 99px;
+  font-size: .7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  box-shadow: 0 2px 6px rgba(155,107,0,.4);
+}
+.cbc-bean-stock-tag {
+  position: absolute;
+  top: .6rem;
+  left: .6rem;
+  padding: .2rem .6rem;
+  border-radius: 99px;
+  font-size: .68rem;
+  font-weight: 700;
+}
+.cbc-bean-stock-tag.out     { background: #C41E3A; color: #fff; }
+.cbc-bean-stock-tag.low     { background: #f59e0b; color: #fff; }
+.cbc-bean-stock-tag.medium  { background: #b45309; color: #fff; }
+.cbc-bean-stock-tag.good    { background: #22c55e; color: #fff; }
+
+.cbc-bean-body {
+  padding: .9rem 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+}
+
+.cbc-bean-name {
+  font-size: .98rem;
+  font-weight: 800;
+  color: #1A1A1A;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.cbc-bean-origin {
+  font-size: .78rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  flex-wrap: wrap;
+}
+.cbc-bean-origin svg { color: #9B6B00; flex-shrink: 0; }
+
+.cbc-bean-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .25rem .6rem;
+}
+.cbc-detail-row {
+  display: flex;
+  flex-direction: column;
+}
+.cbc-detail-label {
+  font-size: .67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #9ca3af;
+}
+.cbc-detail-value {
+  font-size: .78rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.cbc-bean-notes {
+  font-size: .78rem;
+  color: #6b7280;
+  font-style: italic;
+  line-height: 1.45;
+  border-left: 2px solid #f59e0b;
+  padding-left: .55rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cbc-stock-section {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+}
+.cbc-stock-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.cbc-stock-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .4s;
+}
+.cbc-stock-bar-fill.out     { background: #C41E3A; width: 2%; }
+.cbc-stock-bar-fill.low     { background: #f59e0b; }
+.cbc-stock-bar-fill.medium  { background: #b45309; }
+.cbc-stock-bar-fill.good    { background: #22c55e; }
+.cbc-stock-qty {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #1A1A1A;
+  white-space: nowrap;
+}
+
+.cbc-bean-footer {
+  padding: .65rem 1rem .85rem;
+  display: flex;
+  gap: .5rem;
+}
+.cbc-bean-footer .cbc-btn { flex: 1; justify-content: center; }
+
+/* ── Empty state ──────────────────────────────────── */
+.cbc-empty {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: #9ca3af;
+}
+.cbc-empty svg {
+  display: block;
+  margin: 0 auto .9rem;
+  opacity: .3;
+  font-size: 3rem;
+}
+.cbc-empty h3 { font-size: 1rem; font-weight: 700; color: #6b7280; margin-bottom: .35rem; }
+.cbc-empty p  { font-size: .83rem; margin: 0; }
+
+/* ── Today's Featured Hero ────────────────────────── */
+.cbc-hero {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0,0,0,.07);
+}
+.cbc-hero-head {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .85rem 1.1rem;
+  background: linear-gradient(135deg, #9B6B00 0%, #C4860A 100%);
+  color: #fff;
+}
+.cbc-hero-head h2 { font-size: .95rem; font-weight: 700; margin: 0; }
+
+.cbc-hero-body {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1.1rem;
+  background: #fff;
+  flex-wrap: wrap;
+}
+.cbc-hero-info { flex: 1; min-width: 240px; }
+
+.cbc-hero-bean-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #3D1C02;
+  margin-bottom: .35rem;
+}
+.cbc-hero-meta {
+  font-size: .82rem;
+  color: #6b7280;
+  margin-bottom: .75rem;
+}
+.cbc-hero-promo {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  padding: .55rem .85rem;
+  border-radius: 0 8px 8px 0;
+  font-size: .82rem;
+  color: #92400e;
+  margin-bottom: .65rem;
+}
+.cbc-hero-notes {
+  font-size: .8rem;
+  color: #6b7280;
+  font-style: italic;
+}
+.cbc-hero-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .5rem;
+  min-width: 140px;
+}
+
+.cbc-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .28rem .7rem;
+  border-radius: 99px;
+  font-size: .73rem;
+  font-weight: 700;
+}
+.cbc-status-chip.active    { background: #dcfce7; color: #15803d; }
+.cbc-status-chip.scheduled { background: #fef3c7; color: #92400e; }
+.cbc-status-chip.inactive  { background: #f3f4f6; color: #6b7280; }
+.cbc-time-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: .3rem .65rem;
+  font-size: .78rem;
+  color: #374151;
+  font-weight: 600;
+}
+.cbc-hero-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+  text-align: center;
+  color: #9ca3af;
+  background: #fff;
+}
+.cbc-hero-empty svg { font-size: 2.5rem; opacity: .25; display: block; margin-bottom: .75rem; }
+.cbc-hero-empty h4  { font-size: .95rem; font-weight: 700; color: #6b7280; margin-bottom: .25rem; }
+.cbc-hero-empty p   { font-size: .8rem; margin: 0; }
+
+/* ── Featured section header ─────────────────────── */
+.cbc-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+.cbc-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin: 0;
+}
+
+/* ── Featured Origins Grid ────────────────────────── */
+.cbc-featured-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .9rem;
+}
+
+.cbc-featured-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  transition: box-shadow .14s;
+}
+.cbc-featured-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.1); }
+
+.cbc-featured-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .7rem .9rem;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  gap: .5rem;
+}
+.cbc-featured-card-name { font-size: .875rem; font-weight: 700; color: #1A1A1A; }
+.cbc-featured-card-date { font-size: .73rem; color: #9ca3af; display: flex; align-items: center; gap: .3rem; }
+
+.cbc-featured-card-body { padding: .7rem .9rem; font-size: .8rem; color: #6b7280; }
+.cbc-featured-card-body p { margin-bottom: .3rem; }
+.cbc-featured-promo { background: #fffbeb; border-left: 2px solid #f59e0b; padding: .3rem .6rem; border-radius: 0 6px 6px 0; font-size: .75rem; color: #92400e; margin-top: .5rem; }
+
+/* ── Modals ───────────────────────────────────────── */
+.cbc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.46);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.cbc-dialog {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.18);
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: cbc-fadeIn .18s ease;
+}
+.cbc-dialog.lg { max-width: 720px; }
+.cbc-dialog.sm { max-width: 440px; }
+
+@keyframes cbc-fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+
+.cbc-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  justify-content: space-between;
+  padding: 1.1rem 1.3rem .9rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.cbc-dialog-title { font-size: 1rem; font-weight: 800; color: #1A1A1A; margin: 0; display: flex; align-items: center; gap: .45rem; }
+.cbc-dialog-close {
+  border: none; background: #f3f4f6; border-radius: 8px; width: 32px; height: 32px;
+  cursor: pointer; font-size: 1rem; color: #6b7280; display: flex; align-items: center; justify-content: center;
+}
+.cbc-dialog-close:hover { background: #e5e7eb; color: #374151; }
+
+.cbc-dialog-body { padding: 1.2rem 1.3rem; }
+.cbc-dialog-footer {
+  padding: .9rem 1.3rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+}
+
+/* ── Form ─────────────────────────────────────────── */
+.cbc-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem 1rem;
+}
+.cbc-form-grid.full { grid-template-columns: 1fr; }
+
+.cbc-form-group { display: flex; flex-direction: column; gap: .35rem; }
+.cbc-form-group.span2 { grid-column: 1 / -1; }
+
+.cbc-label {
+  font-size: .77rem;
+  font-weight: 700;
+  color: #374151;
+}
+.cbc-label span { color: #C41E3A; margin-left: 2px; }
+
+.cbc-input, .cbc-select, .cbc-textarea {
+  padding: .5rem .75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  font-size: .83rem;
+  background: #fff;
+  color: #1A1A1A;
+  transition: border-color .15s, box-shadow .15s;
+  width: 100%;
+}
+.cbc-input:focus, .cbc-select:focus, .cbc-textarea:focus {
+  outline: none;
+  border-color: var(--color-dark-green);
+  box-shadow: 0 0 0 3px rgba(0,104,55,.1);
+}
+.cbc-input.readonly { background: #f3f4f6; color: #9ca3af; cursor: default; }
+.cbc-textarea { resize: vertical; min-height: 72px; line-height: 1.45; }
+.cbc-hint { font-size: .72rem; color: #9ca3af; }
+
+.cbc-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+  font-size: .83rem;
+  font-weight: 500;
+  color: #374151;
+}
+.cbc-checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-dark-green);
+  cursor: pointer;
+}
+
+.cbc-file-drop {
+  border: 2px dashed #e5e7eb;
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.cbc-file-drop:hover { border-color: var(--color-dark-green); background: #f0fdf4; }
+.cbc-file-drop input { display: none; }
+.cbc-file-drop p { font-size: .8rem; color: #9ca3af; margin: .4rem 0 0; }
+
+.cbc-img-preview {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-top: .65rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* stock indicator in stock modal */
+.cbc-stock-indicator {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .65rem .85rem;
+  border-radius: 10px;
+  font-size: .83rem;
+  font-weight: 600;
+  margin-top: .75rem;
+}
+.cbc-stock-indicator.out    { background: #fee2e2; color: #C41E3A; }
+.cbc-stock-indicator.low    { background: #fef3c7; color: #92400e; }
+.cbc-stock-indicator.medium { background: #fef3c7; color: #b45309; }
+.cbc-stock-indicator.good   { background: #dcfce7; color: #15803d; }
+
+/* Warning box for archive confirm */
+.cbc-warn-box {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  padding: .85rem;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 0 10px 10px 0;
+  margin-bottom: .75rem;
+}
+.cbc-warn-box svg { color: #f59e0b; flex-shrink: 0; margin-top: 2px; }
+.cbc-warn-box p { font-size: .83rem; color: #92400e; margin: 0; }
+
+/* ── Spinner ──────────────────────────────────────── */
+.cbc-spin { animation: cbc-rotate .7s linear infinite; display: inline-block; }
+@keyframes cbc-rotate { to { transform: rotate(360deg); } }
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 1200px) {
+  .cbc-bean-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .cbc-bean-grid     { grid-template-columns: 1fr; }
+  .cbc-featured-grid { grid-template-columns: 1fr; }
+  .cbc-form-grid     { grid-template-columns: 1fr; }
+  .cbc-page          { padding: 1rem; }
+  .cbc-topbar        { flex-direction: column; align-items: stretch; gap: .75rem; }
+  .cbc-filters       { flex-direction: column; }
+}

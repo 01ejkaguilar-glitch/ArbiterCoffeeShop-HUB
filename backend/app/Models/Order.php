@@ -129,6 +129,14 @@ class Order extends Model
     }
 
     /**
+     * Backwards-compatible alias for `orderItems()` used in older tests.
+     */
+    public function items()
+    {
+        return $this->orderItems();
+    }
+
+    /**
      * Get the delivery address for the order.
      */
     public function deliveryAddress()

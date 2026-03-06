@@ -1,0 +1,408 @@
+/* ---------------------------------------------------
+   AdminReports.css  �  ar-* design system
+   Arbiter Coffee Shop Hub | Reports
+   --------------------------------------------------- */
+
+/* -- Filter Bar ----------------------------------- */
+.ar-filter-bar {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  align-items: flex-end;
+}
+
+.ar-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: .28rem;
+}
+
+.ar-filter-label {
+  font-size: .72rem;
+  font-weight: 700;
+  color: #4A4A4A;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.ar-input,
+.ar-select {
+  padding: .42rem .75rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: .875rem;
+  background: #fff;
+  color: #1A1A1A;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  height: 36px;
+}
+.ar-input:focus,
+.ar-select:focus {
+  border-color: var(--color-dark-green);
+  box-shadow: 0 0 0 3px rgba(0,104,55,.12);
+}
+
+.ar-filter-actions {
+  display: flex;
+  gap: .5rem;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.ar-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: 0 1rem;
+  height: 36px;
+  background: var(--color-dark-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: .83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .14s;
+  white-space: nowrap;
+}
+.ar-apply-btn:hover:not(:disabled) { background: #005A29; }
+.ar-apply-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.ar-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: 0 1.1rem;
+  height: 36px;
+  background: var(--color-dark-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: .83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .14s;
+  white-space: nowrap;
+}
+.ar-export-btn:hover:not(:disabled) { background: #005A29; }
+.ar-export-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* -- Quick-range chips ---------------------------- */
+.ar-quick-ranges {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ar-quick-chip {
+  padding: .22rem .65rem;
+  border-radius: 20px;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  font-size: .75rem;
+  font-weight: 600;
+  color: #4A4A4A;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.ar-quick-chip:hover  { border-color: var(--color-dark-green); color: var(--color-dark-green); }
+.ar-quick-chip.active { background: var(--color-dark-green); border-color: var(--color-dark-green); color: #fff; }
+
+/* -- Report Card ---------------------------------- */
+.ar-card {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* -- Tab Nav -------------------------------------- */
+.ar-tab-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #f0f0f0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: #fafafa;
+}
+.ar-tab-nav::-webkit-scrollbar { display: none; }
+
+.ar-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .9rem 1.35rem;
+  border: none;
+  background: transparent;
+  font-size: .84rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -2px;
+  transition: color .15s, border-color .15s, background .15s;
+  white-space: nowrap;
+}
+.ar-tab-btn:hover  { color: #374151; background: #f3f4f6; }
+.ar-tab-btn.active { color: var(--color-dark-green); border-bottom-color: var(--color-dark-green); background: #fff; }
+.ar-tab-btn svg    { font-size: .85rem; }
+
+/* -- Tab Body ------------------------------------- */
+.ar-tab-body { padding: 1.25rem 1.25rem 1.5rem; }
+
+/* -- KPI Stat Grid -------------------------------- */
+.ar-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ar-stat-card {
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.1rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: box-shadow .15s;
+}
+.ar-stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.07); }
+
+.ar-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.ar-stat-icon.blue   { background: var(--color-success-bg); color: var(--color-dark-green); }
+.ar-stat-icon.green  { background: var(--color-success-bg); color: #2D7A2F; }
+.ar-stat-icon.amber  { background: #FFF9E6; color: #9B6B00; }
+.ar-stat-icon.red    { background: #FFEBEE; color: #C41E3A; }
+.ar-stat-icon.teal   { background: var(--color-success-bg); color: var(--color-medium-green); }
+.ar-stat-icon.orange { background: #FFF3E0; color: #E65100; }
+
+.ar-stat-val {
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #111827;
+}
+.ar-stat-label {
+  font-size: .69rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* -- Progress Bar (attendance rate) --------------- */
+.ar-progress-wrap {
+  margin-bottom: 1.25rem;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: .85rem 1.1rem;
+}
+.ar-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .4rem;
+}
+.ar-progress-label {
+  font-size: .75rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.ar-progress-value {
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--color-dark-green);
+}
+.ar-progress-track {
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.ar-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--color-medium-green), var(--color-dark-green));
+  transition: width .4s ease;
+}
+
+/* -- Section sub-title ---------------------------- */
+.ar-sub-title {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .75rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: .75rem;
+  padding-bottom: .45rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+.ar-sub-title::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 14px;
+  background: var(--color-dark-green);
+  border-radius: 2px;
+}
+
+/* -- Table wrapper (horizontal scroll) ----------- */
+.ar-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid #f3f4f6;
+  margin-bottom: .5rem;
+}
+
+/* -- Table ---------------------------------------- */
+.ar-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .875rem;
+}
+.ar-table thead th {
+  background: #f8f9fa;
+  color: #4A4A4A;
+  font-weight: 700;
+  font-size: .71rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: .7rem 1rem;
+  border-bottom: 2px solid #e9ecef;
+  white-space: nowrap;
+}
+.ar-table thead th.r,
+.ar-table td.r { text-align: right; }
+
+.ar-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background .1s;
+}
+.ar-table tbody tr:last-child { border-bottom: none; }
+.ar-table tbody tr:hover { background: #f8fffe; }
+.ar-table td {
+  padding: .7rem 1rem;
+  color: #1A1A1A;
+  vertical-align: middle;
+}
+
+.ar-employee-name  { font-weight: 600; font-size: .875rem; }
+.ar-employee-role  { font-size: .72rem; color: #6b7280; margin-top: 1px; }
+
+.ar-no-data {
+  text-align: center;
+  padding: 2.5rem;
+  color: #9ca3af;
+  font-size: .85rem;
+}
+
+/* -- Status Badge --------------------------------- */
+.ar-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .22rem .6rem;
+  border-radius: 999px;
+  font-size: .71rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+/* -- Loading -------------------------------------- */
+.ar-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  padding: 4rem;
+  color: #6b7280;
+  font-size: .875rem;
+}
+
+@keyframes arSpin { to { transform: rotate(360deg); } }
+
+.ar-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e9ecef;
+  border-top-color: var(--color-dark-green);
+  border-radius: 50%;
+  animation: arSpin .65s linear infinite;
+  display: inline-block;
+}
+
+/* -- Empty state ---------------------------------- */
+.ar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+  gap: .5rem;
+}
+.ar-empty-icon { font-size: 2.2rem; color: #d1d5db; }
+.ar-empty-text { font-size: .9rem; font-weight: 600; color: #374151; }
+.ar-empty-sub  { font-size: .8rem; color: #9ca3af; }
+
+/* -- Divider between sections --------------------- */
+.ar-section-gap { margin-top: 1.5rem; }
+
+/* -- Bean stock bar ------------------------------- */
+.ar-stock-bar-wrap { min-width: 80px; }
+.ar-stock-bar-track {
+  height: 5px;
+  background: #f3f4f6;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+.ar-stock-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+}
+.ar-stock-bar-fill.green  { background: var(--color-medium-green); }
+.ar-stock-bar-fill.amber  { background: #9B6B00; }
+.ar-stock-bar-fill.red    { background: #C41E3A; }
+
+/* -- Responsive ----------------------------------- */
+@media (max-width: 768px) {
+  .ar-stat-grid   { grid-template-columns: repeat(2, 1fr); }
+  .ar-filter-bar  { flex-direction: column; align-items: stretch; }
+  .ar-filter-actions { margin-left: 0; }
+  .ar-apply-btn,
+  .ar-export-btn  { justify-content: center; width: 100%; }
+}
+
+@media (max-width: 400px) {
+  .ar-stat-grid { grid-template-columns: repeat(2, 1fr); gap: .6rem; }
+  .ar-stat-card { padding: .65rem .75rem; gap: .6rem; }
+  .ar-stat-icon { width: 34px; height: 34px; font-size: .85rem; border-radius: 8px; }
+  .ar-stat-value { font-size: 1.15rem; }
+  .ar-stat-label { font-size: .65rem; }
+}

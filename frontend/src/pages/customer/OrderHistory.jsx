@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Table, Spinner, Alert, Form, InputGroup, Dropdown, Pagination } from 'react-bootstrap';
-import { FaEye, FaRedo, FaWifi, FaExclamationTriangle, FaSearch, FaFilter, FaDownload, FaRedoAlt, FaCalendarAlt, FaSort, FaTimes } from 'react-icons/fa';
+import { FaEye, FaRedo, FaWifi, FaExclamationTriangle, FaSearch, FaFilter, FaDownload, FaRedoAlt, FaCalendarAlt, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useOrderUpdates } from '../../hooks/useBroadcast';
 import { useNotificationSystem } from '../../components/common/NotificationSystem';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
+import { TableRowSkeleton } from '../../components/animations/LoadingSkeleton';
+import StatusBadge from '../../components/common/StatusBadge';
+import { useToast } from '../../components/animations/Toast';
 
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -25,6 +28,7 @@ const OrderHistory = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { showOrderNotification } = useNotificationSystem();
+  const toast = useToast();
 
   // Real-time order updates
   const { isConnected, lastUpdate } = useOrderUpdates(user?.id, (action, order) => {
@@ -75,8 +79,7 @@ const OrderHistory = () => {
     try {
       const response = await apiService.post(API_ENDPOINTS.ORDERS.REORDER(orderId));
       if (response.success) {
-        // Redirect to cart or show success message
-        alert('Order items added to cart successfully!');
+        toast.success('Order items added to cart successfully!');
         navigate('/cart');
       } else {
         setError('Failed to reorder items');
@@ -173,28 +176,6 @@ Thank you for your business!
     setSortBy('date');
     setSortOrder('desc');
     setCurrentPage(1);
-  };
-
-  const getStatusBadge = (status) => {
-    const statusColors = {
-      pending: 'warning',
-      confirmed: 'info',
-      preparing: 'primary',
-      ready: 'success',
-      completed: 'success',
-      cancelled: 'danger',
-      cancellation_requested: 'warning',
-    };
-    const statusLabels = {
-      pending: 'Pending',
-      confirmed: 'Confirmed',
-      preparing: 'Preparing',
-      ready: 'Ready',
-      completed: 'Completed',
-      cancelled: 'Cancelled',
-      cancellation_requested: 'Cancel Requested',
-    };
-    return <Badge bg={statusColors[status] || 'secondary'}>{statusLabels[status] || status}</Badge>;
   };
 
   const filteredAndSortedOrders = useMemo(() => {
@@ -297,6 +278,7 @@ Thank you for your business!
   }
 
   return (
+    <main role="main">
     <Container className="py-5">
       <Row className="mb-4">
         <Col>
@@ -468,13 +450,19 @@ Thank you for your business!
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedOrders.map((order) => (
+                    {loading ? (
+                      // Skeleton loading rows
+                      Array.from({ length: 5 }).map((_, index) => (
+                        <TableRowSkeleton key={index} columns={6} />
+                      ))
+                    ) : (
+                    paginatedOrders.map((order) => (
                       <tr key={order.id}>
                         <td>
                           <strong>{order.order_number}</strong>
                         </td>
                         <td>{formatDate(order.created_at)}</td>
-                        <td>{getStatusBadge(order.status)}</td>
+                        <td><StatusBadge type="order" status={order.status} /></td>
                         <td>₱{parseFloat(order.total_amount).toFixed(2)}</td>
                         <td>
                           <Badge bg="light" text="dark">
@@ -537,7 +525,8 @@ Thank you for your business!
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ))
+                    )}
                   </tbody>
                 </Table>
 
@@ -583,7 +572,8 @@ Thank you for your business!
           )}
         </Col>
       </Row>
-    </Container>
+      </Container>
+    </main>
   );
 };
 

@@ -1,0 +1,379 @@
+/* +--------------------------------------------------------------+
+   �  CompletedFoodOrders.css � cfo-* design system              �
+   �  Kitchen orange theme                                        �
+   +--------------------------------------------------------------+ */
+
+.cfo-page {
+  padding: 24px 28px;
+  min-height: 100vh;
+  background: #f5f6fa;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* -- Topbar ----------------------------------------------------- */
+.cfo-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cfo-title {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin: 0 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cfo-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+.cfo-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.cfo-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-kitchen-primary);
+  background: transparent;
+  color: var(--color-kitchen-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.cfo-refresh-btn:hover { background: var(--color-kitchen-primary); color: #fff; }
+.cfo-refresh-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* -- Summary row ----------------------------------------------- */
+.cfo-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.cfo-summary-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid #f0f0f5;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  text-align: center;
+}
+.cfo-summary-value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.cfo-summary-label {
+  font-size: 0.73rem;
+  color: #6b7280;
+}
+
+/* -- Filters --------------------------------------------------- */
+.cfo-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid #f0f0f5;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.cfo-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+.cfo-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 0.82rem;
+}
+.cfo-search-input {
+  width: 100%;
+  padding: 7px 32px 7px 30px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: #374151;
+  outline: none;
+  background: #fafafa;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.cfo-search-input:focus { border-color: var(--color-kitchen-primary); background: #fff; }
+.cfo-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  line-height: 1;
+}
+.cfo-date-input {
+  padding: 7px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: #374151;
+  outline: none;
+  background: #fafafa;
+  transition: border-color 0.15s;
+}
+.cfo-date-input:focus { border-color: var(--color-kitchen-primary); }
+
+/* -- Orders table / list --------------------------------------- */
+.cfo-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid #f0f0f5;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  overflow: hidden;
+}
+.cfo-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f3f4f6;
+}
+.cfo-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.cfo-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.cfo-order-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 100px 110px 80px 80px;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  border-bottom: 1px solid #f9fafb;
+  font-size: 0.83rem;
+  transition: background 0.12s;
+}
+.cfo-order-row:last-child { border-bottom: none; }
+.cfo-order-row:hover { background: #fafafa; }
+.cfo-order-num {
+  font-weight: 700;
+  color: var(--color-kitchen-primary);
+  font-size: 0.82rem;
+}
+.cfo-order-customer {
+  color: #374151;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cfo-order-total {
+  font-weight: 700;
+  color: #111827;
+  text-align: right;
+}
+.cfo-order-time {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-align: center;
+}
+.cfo-order-type-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.cfo-order-type-badge.dine_in { background: #fff7ed; color: var(--color-kitchen-primary); }
+.cfo-order-type-badge.take_out { background: #fef3c7; color: #b45309; }
+.cfo-order-type-badge.delivery { background: #f0fdf4; color: #16a34a; }
+.cfo-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1.5px solid #e5e7eb;
+  background: #fafafa;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-left: auto;
+}
+.cfo-view-btn:hover { background: #fff7ed; border-color: #fed7aa; color: var(--color-kitchen-primary); }
+
+/* Table header */
+.cfo-table-header {
+  display: grid;
+  grid-template-columns: 100px 1fr 100px 110px 80px 80px;
+  gap: 12px;
+  padding: 9px 18px;
+  background: #f9fafb;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* -- Pagination ------------------------------------------------ */
+.cfo-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+.cfo-page-btns { display: flex; gap: 6px; }
+.cfo-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1.5px solid #e5e7eb;
+  background: #fafafa;
+  color: #374151;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cfo-page-btn:hover:not(:disabled) { background: #fff7ed; border-color: #fed7aa; color: var(--color-kitchen-primary); }
+.cfo-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* -- Empty / Loading ------------------------------------------- */
+.cfo-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: #9ca3af;
+  font-size: 0.88rem;
+}
+.cfo-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px;
+  color: #9ca3af;
+  font-size: 0.88rem;
+}
+
+/* -- Modal ----------------------------------------------------- */
+.cfo-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.cfo-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+}
+.cfo-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+.cfo-modal-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+.cfo-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 1rem;
+  transition: color 0.15s;
+}
+.cfo-modal-close:hover { color: #374151; }
+.cfo-modal-body { padding: 18px 20px; }
+.cfo-modal-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.83rem;
+  color: #374151;
+  margin-bottom: 16px;
+}
+.cfo-modal-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cfo-modal-item-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.83rem;
+  padding: 6px 0;
+  border-bottom: 1px solid #f9fafb;
+  color: #374151;
+}
+
+/* -- Spinning --------------------------------------------------- */
+.spinning { animation: cfo-spin 0.6s linear infinite; }
+@keyframes cfo-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .cfo-page { padding: 16px; }
+  .cfo-order-row { grid-template-columns: 80px 1fr auto; }
+  .cfo-order-time, .cfo-order-type-badge { display: none; }
+  .cfo-table-header { grid-template-columns: 80px 1fr auto; }
+  .cfo-toolbar { flex-direction: column; align-items: stretch; }
+}
+
+@media (max-width: 480px) {
+  .cfo-order-row { grid-template-columns: 60px 1fr auto; font-size: .8rem; }
+  .cfo-table-header { grid-template-columns: 60px 1fr auto; }
+}

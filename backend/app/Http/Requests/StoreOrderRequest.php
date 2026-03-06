@@ -26,8 +26,8 @@ class StoreOrderRequest extends FormRequest
             'items.*.quantity' => 'required|integer|min:1|max:99',
             'items.*.special_instructions' => 'nullable|string|max:500',
             'payment_method' => 'required|in:cash,gcash,maya,card',
-            'delivery_address_id' => 'nullable|exists:addresses,id',
-            'scheduled_time' => 'nullable|date|after:now',
+            'delivery_address_id' => 'required_if:order_type,delivery|nullable|exists:addresses,id',
+            'pickup_time' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:1000',
             // 'coupon_code' => 'nullable|string|exists:coupons,code',
         ];

@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Models\CoffeeBean;
 use App\Models\DailyFeaturedOrigin;
 use App\Models\Order;
+use App\Events\OrderStatusUpdated;
+use App\Notifications\OrderStatusNotification;
+use App\Http\Requests\UpdateOrderStatusRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,14 +21,16 @@ class BaristaController extends BaseController
     public function getOrderQueue()
     {
         try {
-            $orders = Order::whereIn('status', ['pending', 'preparing'])
+            $orders = Order::whereIn('status', ['pending', 'confirmed', 'preparing', 'ready'])
                 ->with(['orderItems.product', 'user'])
                 ->orderBy('created_at', 'asc')
                 ->get();
 
             $queueData = [
                 'pending_orders' => $orders->where('status', 'pending')->values()->toArray(),
+                'confirmed_orders' => $orders->where('status', 'confirmed')->values()->toArray(),
                 'preparing_orders' => $orders->where('status', 'preparing')->values()->toArray(),
+                'ready_orders' => $orders->where('status', 'ready')->values()->toArray(),
                 'total_queue' => $orders->count(),
             ];
 
@@ -49,9 +54,10 @@ class BaristaController extends BaseController
 
             // Validate status transition
             $validTransitions = [
-                'pending' => ['preparing', 'cancelled'],
+                'pending'   => ['confirmed', 'preparing', 'cancelled'],
+                'confirmed' => ['preparing', 'cancelled'],
                 'preparing' => ['ready', 'completed', 'cancelled'],
-                'ready' => ['completed'],
+                'ready'     => ['completed'],
                 'completed' => [],
                 'cancelled' => [],
             ];
@@ -69,6 +75,8 @@ class BaristaController extends BaseController
             // Set timestamps based on status
             if ($request->input('status') === 'preparing' && !$order->prepared_at) {
                 $order->prepared_at = now();
+            } elseif ($request->input('status') === 'ready' && !$order->completed_at) {
+                // ready is not a terminal state — leave completed_at unset
             } elseif (in_array($request->input('status'), ['completed', 'cancelled']) && !$order->completed_at) {
                 $order->completed_at = now();
             }
@@ -85,7 +93,19 @@ class BaristaController extends BaseController
 
             $order->load(['orderItems.product', 'user']);
 
-            // TODO: Broadcast real-time notification in Stage 5 Week 15
+            // Broadcast real-time event and send notification to customer
+            event(new OrderStatusUpdated($order, $oldStatus, $request->input('status'), auth()->user()));
+
+            if ($order->user) {
+                $notifType = match ($request->input('status')) {
+                    'preparing' => 'status_update',
+                    'ready'     => 'order_ready',
+                    'completed' => 'order_completed',
+                    'cancelled' => 'order_cancelled',
+                    default     => 'status_update',
+                };
+                $order->user->notify(new OrderStatusNotification($order, $notifType));
+            }
 
             return $this->sendResponse($order, 'Order status updated successfully');
         } catch (\Exception $e) {
@@ -105,12 +125,12 @@ class BaristaController extends BaseController
             $query = Order::where('status', 'completed')
                 ->with(['orderItems.product', 'user']);
 
-            // Filter by date if provided
-            if ($request->has('date')) {
-                $query->whereDate('updated_at', $request->input('date'));
+            // Filter by completed_at date if provided
+            if ($request->has('date') && $request->input('date')) {
+                $query->whereDate('completed_at', $request->input('date'));
             }
 
-            $orders = $query->orderBy('updated_at', 'desc')
+            $orders = $query->orderBy('completed_at', 'desc')
                 ->paginate(20);
 
             return $this->sendResponse($orders, 'Completed orders retrieved successfully');
@@ -175,7 +195,7 @@ class BaristaController extends BaseController
     {
         try {
             $request->validate([
-                'stock_quantity' => 'required|integer|min:0',
+                'stock_quantity' => 'required|numeric|min:0',
             ]);
 
             $bean = CoffeeBean::findOrFail($id);
@@ -420,19 +440,18 @@ class BaristaController extends BaseController
                 'coffee_bean_id' => 'required|exists:coffee_beans,id',
                 'feature_date' => 'required|date|after_or_equal:today',
                 'start_time' => 'nullable|date_format:H:i',
-                'end_time' => 'nullable|date_format:H:i|after:start_time',
+                'end_time' => 'nullable|date_format:H:i',
                 'special_notes' => 'nullable|string|max:1000',
                 'promotion_text' => 'nullable|string|max:500',
                 'is_active' => 'boolean'
             ]);
 
-            // Check if there's already a featured origin for this date
+            // Check if there's already a featured origin for this date (regardless of active status)
             $existing = DailyFeaturedOrigin::where('feature_date', $request->feature_date)
-                ->where('is_active', true)
                 ->first();
 
             if ($existing) {
-                return $this->sendError('A featured origin already exists for this date', 422);
+                return $this->sendError('A featured origin is already scheduled for this date. Please edit the existing one.', 422);
             }
 
             $featuredOrigin = DailyFeaturedOrigin::create([
@@ -468,23 +487,22 @@ class BaristaController extends BaseController
 
             $request->validate([
                 'coffee_bean_id' => 'sometimes|exists:coffee_beans,id',
-                'feature_date' => 'sometimes|date|after_or_equal:today',
+                'feature_date' => 'sometimes|date',
                 'start_time' => 'nullable|date_format:H:i',
-                'end_time' => 'nullable|date_format:H:i|after:start_time',
+                'end_time' => 'nullable|date_format:H:i',
                 'special_notes' => 'nullable|string|max:1000',
                 'promotion_text' => 'nullable|string|max:500',
                 'is_active' => 'boolean'
             ]);
 
             // Check for conflicts if date is being changed
-            if ($request->has('feature_date') && $request->feature_date !== $featuredOrigin->feature_date) {
+            if ($request->has('feature_date') && $request->feature_date !== $featuredOrigin->getRawOriginal('feature_date')) {
                 $existing = DailyFeaturedOrigin::where('feature_date', $request->feature_date)
-                    ->where('is_active', true)
                     ->where('id', '!=', $id)
                     ->first();
 
                 if ($existing) {
-                    return $this->sendError('A featured origin already exists for this date', 422);
+                    return $this->sendError('A featured origin is already scheduled for this date. Please edit the existing one.', 422);
                 }
             }
 
@@ -532,7 +550,7 @@ class BaristaController extends BaseController
     public function getAvailableBeans()
     {
         try {
-            $beans = CoffeeBean::where('is_available', true)
+            $beans = CoffeeBean::where('stock_quantity', '>', 0)
                 ->select('id', 'name', 'origin_country', 'region', 'tasting_notes', 'stock_quantity')
                 ->orderBy('name')
                 ->get();

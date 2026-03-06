@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Arbiter Coffee",
+  "name": "Arbiter Coffee Hub",
+  "description": "Premium coffee ordering and management system. Order your favorite coffee, track orders, and manage your coffee shop experience.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,16 +11,62 @@
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait-primary",
+  "theme_color": "#2E7D32",
+  "background_color": "#ffffff",
+  "categories": ["food", "shopping", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "assets/screenshot-home.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home Screen"
+    },
+    {
+      "src": "assets/screenshot-products.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Products Menu"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "View Menu",
+      "short_name": "Menu",
+      "description": "Browse our coffee menu",
+      "url": "/products",
+      "icons": [{ "src": "assets/icon-menu.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "My Orders",
+      "short_name": "Orders",
+      "description": "View your order history",
+      "url": "/orders",
+      "icons": [{ "src": "assets/icon-orders.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Shopping Cart",
+      "short_name": "Cart",
+      "description": "View your shopping cart",
+      "url": "/cart",
+      "icons": [{ "src": "assets/icon-cart.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

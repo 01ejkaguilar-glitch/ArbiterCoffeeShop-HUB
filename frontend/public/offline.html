@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2E7D32">
+  <title>Offline - Arbiter Coffee Hub</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #333;
+    }
+
+    .offline-container {
+      text-align: center;
+      max-width: 400px;
+      background: white;
+      padding: 40px 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .offline-icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .offline-icon::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: inherit;
+      animation: pulse 2s infinite;
+      opacity: 0.3;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.3;
+      }
+      50% {
+        transform: scale(1.15);
+        opacity: 0.1;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 0.3;
+      }
+    }
+
+    .coffee-cup {
+      width: 50px;
+      height: 60px;
+      position: relative;
+    }
+
+    .coffee-cup svg {
+      fill: white;
+      width: 100%;
+      height: 100%;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+
+    p {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 160px;
+      min-height: 48px;
+    }
+
+    .retry-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.4);
+    }
+
+    .retry-btn:active {
+      transform: translateY(0);
+    }
+
+    .retry-btn.loading {
+      pointer-events: none;
+    }
+
+    .retry-btn .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .retry-btn.loading .spinner {
+      display: block;
+    }
+
+    .retry-btn.loading .btn-text {
+      display: none;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .tips {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #eee;
+      text-align: left;
+    }
+
+    .tips h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .tips ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .tips li {
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .tips li::before {
+      content: '•';
+      position: absolute;
+      left: 8px;
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
+    .brand {
+      margin-top: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #888;
+      font-size: 0.875rem;
+    }
+
+    .brand svg {
+      width: 24px;
+      height: 24px;
+      fill: #2E7D32;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        color: #e0e0e0;
+      }
+
+      .offline-container {
+        background: #2d2d2d;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        color: #fff;
+      }
+
+      p {
+        color: #aaa;
+      }
+
+      .tips {
+        border-top-color: #444;
+      }
+
+      .tips h3 {
+        color: #888;
+      }
+
+      .tips li {
+        color: #aaa;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .offline-container {
+        padding: 30px 20px;
+      }
+
+      .offline-icon {
+        width: 100px;
+        height: 100px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-container">
+    <div class="offline-icon">
+      <div class="coffee-cup">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2,21V19H20V21H2M20,8V5H18V8H20M20,3A2,2 0 0,1 22,5V8A2,2 0 0,1 20,10H18V13A4,4 0 0,1 14,17H8A4,4 0 0,1 4,13V3H20M16,5H6V13A2,2 0 0,0 8,15H14A2,2 0 0,0 16,13V5Z"/>
+        </svg>
+      </div>
+    </div>
+    
+    <h1>You're Offline</h1>
+    <p>It looks like you've lost your internet connection. Don't worry, your order will be waiting when you're back online!</p>
+    
+    <button class="retry-btn" onclick="retryConnection()">
+      <span class="spinner"></span>
+      <span class="btn-text">Try Again</span>
+    </button>
+
+    <div class="tips">
+      <h3>While you wait</h3>
+      <ul>
+        <li>Check your Wi-Fi or mobile data connection</li>
+        <li>Try moving closer to your router</li>
+        <li>If on mobile, check your signal strength</li>
+        <li>Your cart items are saved locally</li>
+      </ul>
+    </div>
+
+    <div class="brand">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2,21V19H20V21H2M20,8V5H18V8H20M20,3A2,2 0 0,1 22,5V8A2,2 0 0,1 20,10H18V13A4,4 0 0,1 14,17H8A4,4 0 0,1 4,13V3H20M16,5H6V13A2,2 0 0,0 8,15H14A2,2 0 0,0 16,13V5Z"/>
+      </svg>
+      Arbiter Coffee Hub
+    </div>
+  </div>
+
+  <script>
+    function retryConnection() {
+      const btn = document.querySelector('.retry-btn');
+      btn.classList.add('loading');
+      
+      // Check if online
+      if (navigator.onLine) {
+        // Try to fetch the home page
+        fetch('/')
+          .then(response => {
+            if (response.ok) {
+              window.location.reload();
+            } else {
+              throw new Error('Still offline');
+            }
+          })
+          .catch(() => {
+            btn.classList.remove('loading');
+            showToast('Still offline. Please check your connection.');
+          });
+      } else {
+        setTimeout(() => {
+          btn.classList.remove('loading');
+          showToast('Still offline. Please check your connection.');
+        }, 1500);
+      }
+    }
+
+    function showToast(message) {
+      // Simple toast notification
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        z-index: 1000;
+        animation: slideUp 0.3s ease;
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideUp {
+        from { transform: translate(-50%, 20px); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Auto-retry when back online
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+  </script>
+</body>
+</html>

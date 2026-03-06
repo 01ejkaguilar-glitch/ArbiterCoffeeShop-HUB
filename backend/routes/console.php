@@ -12,4 +12,4 @@ Artisan::command('inspire', function () {
 Schedule::command('db:optimize-queries')->weekly()->sundays()->at('02:00');
 Schedule::command('queue:work --stop-when-empty')->everyMinute()->withoutOverlapping();
 Schedule::command('cache:clear')->weekly()->mondays()->at('01:00');
-Schedule::command('telescope:prune --hours=48')->daily();
+// Schedule::command('telescope:prune --hours=48')->daily(); // Requires laravel/telescope

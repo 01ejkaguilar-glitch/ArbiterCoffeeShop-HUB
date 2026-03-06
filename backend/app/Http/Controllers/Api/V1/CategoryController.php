@@ -6,31 +6,50 @@ use App\Http\Controllers\Api\BaseController;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 class CategoryController extends BaseController
 {
+    // Cache TTL in seconds  
+    const CACHE_TTL = 600; // 10 minutes (categories change less frequently)
+    const CACHE_TAG = 'categories';
+    
+    /**
+     * Clear the categories cache (without tags for database cache compatibility)
+     */
+    private function clearCategoriesCache()
+    {
+        // Clear all cache keys
+        Cache::flush();
+    }
+    
     /**
      * Display a listing of categories.
      */
     public function index(Request $request)
     {
-        $query = Category::query();
+        // Create cache key based on request parameters
+        $cacheKey = 'categories_list_' . md5(json_encode($request->all()));
+        
+        $categories = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($request) {
+            $query = Category::query();
 
-        // Filter by active status
-        $isActive = $request->input('is_active');
-        if ($isActive !== null) {
-            $query->where('is_active', $isActive);
-        }
+            // Filter by active status
+            $isActive = $request->input('is_active');
+            if ($isActive !== null) {
+                $query->where('is_active', $isActive);
+            }
 
-        // Include product count
-        if ($request->get('with_products_count', false)) {
-            $query->withCount('products');
-        }
+            // Include product count
+            if ($request->get('with_products_count', false)) {
+                $query->withCount('products');
+            }
 
-        // Sorting
-        $query->orderBy('sort_order', 'asc');
+            // Sorting
+            $query->orderBy('sort_order', 'asc');
 
-        $categories = $query->get();
+            return $query->get();
+        });
 
         return $this->sendResponse($categories, 'Categories retrieved successfully');
     }
@@ -53,6 +72,9 @@ class CategoryController extends BaseController
         }
 
         $category = Category::create($request->all());
+        
+        // Clear cache after creating
+        $this->clearCategoriesCache();
 
         return $this->sendCreated($category, 'Category created successfully');
     }
@@ -62,7 +84,11 @@ class CategoryController extends BaseController
      */
     public function show($id)
     {
-        $category = Category::withCount('products')->find($id);
+        $cacheKey = 'category_' . $id;
+        
+        $category = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($id) {
+            return Category::withCount('products')->find($id);
+        });
 
         if (!$category) {
             return $this->sendNotFound('Category not found');
@@ -95,6 +121,9 @@ class CategoryController extends BaseController
         }
 
         $category->update($request->all());
+        
+        // Clear cache after updating
+        $this->clearCategoriesCache();
 
         return $this->sendResponse($category, 'Category updated successfully');
     }
@@ -111,6 +140,9 @@ class CategoryController extends BaseController
         }
 
         $category->delete();
+        
+        // Clear cache after deleting
+        $this->clearCategoriesCache();
 
         return $this->sendResponse(null, 'Category deleted successfully');
     }

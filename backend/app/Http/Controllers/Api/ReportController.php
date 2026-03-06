@@ -31,15 +31,15 @@ class ReportController extends BaseController
             $query = Attendance::with(['employee.user']);
 
             // Date range filter
-            if ($request->has('start_date')) {
+            if ($request->filled('start_date')) {
                 $query->whereDate('date', '>=', $request->input('start_date'));
             }
-            if ($request->has('end_date')) {
+            if ($request->filled('end_date')) {
                 $query->whereDate('date', '<=', $request->input('end_date'));
             }
 
             // Employee filter
-            if ($request->has('employee_id')) {
+            if ($request->filled('employee_id')) {
                 $query->where('employee_id', $request->input('employee_id'));
             }
 
@@ -87,17 +87,22 @@ class ReportController extends BaseController
             if (in_array($type, ['leave', 'both'])) {
                 $leaveQuery = LeaveRequest::with(['employee.user']);
 
-                if ($request->has('start_date')) {
+                if ($request->filled('start_date')) {
                     $leaveQuery->whereDate('start_date', '>=', $request->input('start_date'));
                 }
-                if ($request->has('end_date')) {
+                if ($request->filled('end_date')) {
                     $leaveQuery->whereDate('end_date', '<=', $request->input('end_date'));
                 }
-                if ($request->has('employee_id')) {
+                if ($request->filled('employee_id')) {
                     $leaveQuery->where('employee_id', $request->input('employee_id'));
                 }
 
-                $leaveRequests = $leaveQuery->orderBy('start_date', 'desc')->get();
+                $leaveRequests = $leaveQuery->orderBy('start_date', 'desc')->get()->map(function ($leave) {
+                    $leave->days_count = $leave->start_date && $leave->end_date
+                        ? $leave->start_date->diffInDays($leave->end_date) + 1
+                        : 0;
+                    return $leave;
+                });
             }
 
             // Overtime data from attendance records (calculate overtime as hours > 8)
@@ -106,13 +111,13 @@ class ReportController extends BaseController
                     ->whereNotNull('clock_in')
                     ->whereNotNull('clock_out');
 
-                if ($request->has('start_date')) {
+                if ($request->filled('start_date')) {
                     $overtimeQuery->whereDate('date', '>=', $request->input('start_date'));
                 }
-                if ($request->has('end_date')) {
+                if ($request->filled('end_date')) {
                     $overtimeQuery->whereDate('date', '<=', $request->input('end_date'));
                 }
-                if ($request->has('employee_id')) {
+                if ($request->filled('employee_id')) {
                     $overtimeQuery->where('employee_id', $request->input('employee_id'));
                 }
 
@@ -122,10 +127,9 @@ class ReportController extends BaseController
                 $overtimeRecords = $attendanceRecords->filter(function ($attendance) {
                     return $attendance->hours_worked > 8;
                 })->map(function ($attendance) {
-                    // Add overtime_hours to the attendance object
-                    $attendance->overtime_hours = $attendance->hours_worked - 8;
+                    $attendance->overtime_hours = round($attendance->hours_worked - 8, 2);
                     return $attendance;
-                });
+                })->values();
             }
 
             // Calculate statistics
@@ -165,20 +169,20 @@ class ReportController extends BaseController
             $query = Task::with(['assignedTo.user', 'assignedBy.user']);
 
             // Date range filter
-            if ($request->has('start_date')) {
+            if ($request->filled('start_date')) {
                 $query->whereDate('due_date', '>=', $request->input('start_date'));
             }
-            if ($request->has('end_date')) {
+            if ($request->filled('end_date')) {
                 $query->whereDate('due_date', '<=', $request->input('end_date'));
             }
 
             // Employee filter
-            if ($request->has('assigned_to')) {
+            if ($request->filled('assigned_to')) {
                 $query->where('assigned_to', $request->input('assigned_to'));
             }
 
             // Status filter
-            if ($request->has('status')) {
+            if ($request->filled('status')) {
                 $query->where('status', $request->input('status'));
             }
 
@@ -240,7 +244,7 @@ class ReportController extends BaseController
             $beans = $beansQuery->get();
 
             // Calculate stock changes and usage
-            $beanUsage = $beans->map(function($bean) use ($startDate, $endDate) {
+            $beanUsage = $beans->map(function(CoffeeBean $bean) use ($startDate, $endDate) {
                 // Get featured days
                 $featuredDays = $bean->dailyFeaturedOrigins()
                     ->whereBetween('feature_date', [$startDate, $endDate])

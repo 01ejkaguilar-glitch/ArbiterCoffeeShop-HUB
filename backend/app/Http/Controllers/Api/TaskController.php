@@ -192,7 +192,6 @@ class TaskController extends BaseController
 
             $tasks = Task::with(['assignedBy'])
                 ->where('assigned_to', $employee->id)
-                ->whereIn('status', ['pending', 'in_progress'])
                 ->orderBy('due_date', 'asc')
                 ->get();
 
@@ -201,4 +200,42 @@ class TaskController extends BaseController
             return $this->sendError('Failed to retrieve tasks', 500, ['error' => $e->getMessage()]);
         }
     }
-}
+
+    /**
+     * Update own task status (barista / employee self-service)
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateMyTask(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            $employee = Employee::where('user_id', $user->id)->first();
+
+            if (!$employee) {
+                return $this->sendError('Employee record not found', 404);
+            }
+
+            $task = Task::where('id', $id)
+                ->where('assigned_to', $employee->id)
+                ->firstOrFail();
+
+            $request->validate([
+                'status' => 'required|in:pending,in_progress,completed',
+            ]);
+
+            if ($request->input('status') === 'completed' && $task->status !== 'completed') {
+                $task->completed_at = now();
+            }
+
+            $task->status = $request->input('status');
+            $task->save();
+            $task->load(['assignedBy']);
+
+            return $this->sendResponse($task, 'Task updated successfully');
+        } catch (\Exception $e) {
+            return $this->sendError('Failed to update task', 500, ['error' => $e->getMessage()]);
+        }
+    }}

@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\BaseController;
 use App\Models\Inquiry;
+use App\Models\User;
+use App\Notifications\NewInquirySubmission;
+use App\Notifications\InquiryAutoReply;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Notification;
 
 class InquiryController extends BaseController
 {
@@ -35,6 +39,23 @@ class InquiryController extends BaseController
             'phone' => $request->input('phone'),
             'details' => $request->only('experience_level', 'preferred_schedule', 'background', 'motivation'),
         ]);
+
+        try {
+            // Send email notification to admins
+            $admins = User::whereHas('roles', function ($query) {
+                $query->whereIn('name', ['admin', 'super-admin']);
+            })->get();
+
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new NewInquirySubmission($inquiry));
+            }
+
+            // Send auto-reply email to customer
+            Notification::route('mail', $inquiry->email)
+                ->notify(new InquiryAutoReply($inquiry));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send barista training inquiry notifications: ' . $e->getMessage());
+        }
 
         return $this->sendCreated($inquiry, 'Your training inquiry has been submitted successfully. We will contact you soon.');
     }
@@ -69,6 +90,23 @@ class InquiryController extends BaseController
             'phone' => $request->input('phone'),
             'details' => $request->only('event_date', 'event_time', 'location', 'guest_count', 'service_type', 'menu_preferences', 'budget_range', 'special_requests'),
         ]);
+
+        try {
+            // Send email notification to admins
+            $admins = User::whereHas('roles', function ($query) {
+                $query->whereIn('name', ['admin', 'super-admin']);
+            })->get();
+
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new NewInquirySubmission($inquiry));
+            }
+
+            // Send auto-reply email to customer
+            Notification::route('mail', $inquiry->email)
+                ->notify(new InquiryAutoReply($inquiry));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send arbiter express inquiry notifications: ' . $e->getMessage());
+        }
 
         return $this->sendCreated($inquiry, 'Your mobile coffee service inquiry has been submitted successfully. We will contact you soon.');
     }

@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Tabs, Tab } from 'react-bootstrap';
+import { Container, Row, Col, Form, Button, Alert, Tabs, Tab } from 'react-bootstrap';
 import { FaCoffee, FaTruck } from 'react-icons/fa';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
+import SEO from '../../components/SEO';
 
 const InquiriesPage = () => {
   const [activeTab, setActiveTab] = useState('barista');
-  const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [baristaLoading, setBaristaLoading] = useState(false);
+  const [expressLoading, setExpressLoading] = useState(false);
+  const [baristaAlert, setBaristaAlert] = useState({ show: false, type: '', message: '' });
+  const [expressAlert, setExpressAlert] = useState({ show: false, type: '', message: '' });
 
   // Barista Training Form
   const [baristaForm, setBaristaForm] = useState({
@@ -51,8 +54,8 @@ const InquiriesPage = () => {
 
   const handleBaristaSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setAlert({ show: false, type: '', message: '' });
+    setBaristaLoading(true);
+    setBaristaAlert({ show: false, type: '', message: '' });
 
     try {
       const response = await apiService.post(
@@ -61,7 +64,7 @@ const InquiriesPage = () => {
       );
 
       if (response.success) {
-        setAlert({
+        setBaristaAlert({
           show: true,
           type: 'success',
           message: response.message || 'Your training inquiry has been submitted successfully! We will contact you soon.'
@@ -77,20 +80,20 @@ const InquiriesPage = () => {
         });
       }
     } catch (error) {
-      setAlert({
+      setBaristaAlert({
         show: true,
         type: 'danger',
         message: error.response?.data?.message || 'Failed to submit inquiry. Please try again.'
       });
     } finally {
-      setLoading(false);
+      setBaristaLoading(false);
     }
   };
 
   const handleExpressSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setAlert({ show: false, type: '', message: '' });
+    setExpressLoading(true);
+    setExpressAlert({ show: false, type: '', message: '' });
 
     try {
       const response = await apiService.post(
@@ -99,7 +102,7 @@ const InquiriesPage = () => {
       );
 
       if (response.success) {
-        setAlert({
+        setExpressAlert({
           show: true,
           type: 'success',
           message: response.message || 'Your mobile coffee service inquiry has been submitted successfully! We will contact you soon.'
@@ -119,24 +122,33 @@ const InquiriesPage = () => {
         });
       }
     } catch (error) {
-      setAlert({
+      setExpressAlert({
         show: true,
         type: 'danger',
         message: error.response?.data?.message || 'Failed to submit inquiry. Please try again.'
       });
     } finally {
-      setLoading(false);
+      setExpressLoading(false);
     }
   };
 
   return (
-    <div>
+    <main role="main">
+      <SEO 
+        title="Special Services - Barista Training & Mobile Coffee"
+        description="Join Arbiter Coffee's professional barista training program or book our Arbiter Express mobile coffee service for your events. Quality coffee education and catering."
+        keywords="barista training, coffee training, mobile coffee service, coffee catering, Arbiter Express, coffee events, barista certification"
+        url="/inquiries"
+        canonical={`${window.location.origin}/inquiries`}
+        type="website"
+      />
+      
       {/* Hero Section */}
-      <section className="hero-section">
+      <section aria-labelledby="inquiries-hero-heading" className="hero-section">
         <Container>
           <Row className="align-items-center">
             <Col lg={8} className="mx-auto text-center">
-              <h1 className="hero-title">Special Services</h1>
+              <h1 id="inquiries-hero-heading" className="hero-title">Special Services</h1>
               <p className="hero-subtitle">
                 Join our training program or book our mobile coffee service
               </p>
@@ -146,14 +158,25 @@ const InquiriesPage = () => {
       </section>
 
       <Container className="py-5">
-        {alert.show && (
+        {baristaAlert.show && activeTab === 'barista' && (
           <Alert 
-            variant={alert.type} 
-            onClose={() => setAlert({ show: false, type: '', message: '' })} 
+            variant={baristaAlert.type} 
+            onClose={() => setBaristaAlert({ show: false, type: '', message: '' })} 
             dismissible
             className="mb-4"
           >
-            {alert.message}
+            {baristaAlert.message}
+          </Alert>
+        )}
+
+        {expressAlert.show && activeTab === 'express' && (
+          <Alert 
+            variant={expressAlert.type} 
+            onClose={() => setExpressAlert({ show: false, type: '', message: '' })} 
+            dismissible
+            className="mb-4"
+          >
+            {expressAlert.message}
           </Alert>
         )}
 
@@ -162,6 +185,8 @@ const InquiriesPage = () => {
           onSelect={(k) => setActiveTab(k)}
           className="mb-4"
           fill
+          role="tablist"
+          aria-label="Service inquiry forms"
         >
           {/* Be A Barista Tab */}
           <Tab
@@ -173,10 +198,10 @@ const InquiriesPage = () => {
               </span>
             }
           >
-            <Card className="shadow-sm">
-              <Card.Body className="p-4">
-                <h3 className="mb-4">Barista Training Inquiry</h3>
-                <p className="text-muted mb-4">
+            <section aria-labelledby="barista-form-heading">
+            <div className="contact-form-card">
+                <h2 id="barista-form-heading" className="h3 mb-1">Barista Training Inquiry</h2>
+                <p className="form-subtitle">
                   Interested in becoming a barista? Fill out this form and we'll get back to you with training details.
                 </p>
 
@@ -184,8 +209,9 @@ const InquiriesPage = () => {
                   <Row>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Full Name *</Form.Label>
+                        <Form.Label htmlFor="barista-name">Full Name *</Form.Label>
                         <Form.Control
+                          id="barista-name"
                           type="text"
                           name="full_name"
                           value={baristaForm.full_name}
@@ -282,14 +308,15 @@ const InquiriesPage = () => {
                     type="submit" 
                     variant="primary" 
                     size="lg" 
-                    disabled={loading}
+                    disabled={baristaLoading}
                     className="w-100"
+                    aria-label="Submit barista training inquiry"
                   >
-                    {loading ? 'Submitting...' : 'Submit Inquiry'}
+                    {baristaLoading ? 'Submitting...' : 'Submit Inquiry'}
                   </Button>
                 </Form>
-              </Card.Body>
-            </Card>
+            </div>
+            </section>
           </Tab>
 
           {/* Arbiter Express Tab */}
@@ -302,10 +329,10 @@ const InquiriesPage = () => {
               </span>
             }
           >
-            <Card className="shadow-sm">
-              <Card.Body className="p-4">
-                <h3 className="mb-4">Mobile Coffee Service Booking</h3>
-                <p className="text-muted mb-4">
+            <section aria-labelledby="express-form-heading">
+            <div className="contact-form-card">
+                <h2 id="express-form-heading" className="h3 mb-1">Mobile Coffee Service Booking</h2>
+                <p className="form-subtitle">
                   Book our mobile coffee setup for your event. We bring the coffee shop experience to you!
                 </p>
 
@@ -313,21 +340,24 @@ const InquiriesPage = () => {
                   <Row>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Full Name *</Form.Label>
+                        <Form.Label htmlFor="express-name">Full Name *</Form.Label>
                         <Form.Control
+                          id="express-name"
                           type="text"
                           name="full_name"
                           value={expressForm.full_name}
                           onChange={handleExpressChange}
                           required
                           placeholder="Enter your full name"
+                          aria-required="true"
                         />
                       </Form.Group>
                     </Col>
                     <Col md={6}>
                       <Form.Group className="mb-3">
-                        <Form.Label>Email Address *</Form.Label>
+                        <Form.Label htmlFor="express-email">Email Address *</Form.Label>
                         <Form.Control
+                          id="express-email"
                           type="email"
                           name="email"
                           value={expressForm.email}
@@ -472,18 +502,19 @@ const InquiriesPage = () => {
                     type="submit" 
                     variant="primary" 
                     size="lg" 
-                    disabled={loading}
+                    disabled={expressLoading}
                     className="w-100"
+                    aria-label="Submit mobile coffee service booking request"
                   >
-                    {loading ? 'Submitting...' : 'Submit Booking Request'}
+                    {expressLoading ? 'Submitting...' : 'Submit Booking Request'}
                   </Button>
                 </Form>
-              </Card.Body>
-            </Card>
+            </div>
+            </section>
           </Tab>
         </Tabs>
       </Container>
-    </div>
+    </main>
   );
 };
 

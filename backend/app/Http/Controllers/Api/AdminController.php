@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
+use App\Events\OrderStatusUpdated;
+use App\Notifications\OrderStatusNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -32,7 +34,10 @@ class AdminController extends BaseController
 
             // Filter by role
             if ($request->has('role')) {
-                $query->role($request->input('role'));
+                $roleName = $request->input('role');
+                $query->whereHas('roles', function ($q) use ($roleName) {
+                    $q->where('name', $roleName);
+                });
             }
 
             // Search by name or email
@@ -220,19 +225,47 @@ class AdminController extends BaseController
     public function getUserStatistics()
     {
         try {
+            // Single query for user counts (active/total/trashed)
+            $userCounts = DB::selectOne("
+                SELECT
+                    COUNT(*) as total_users,
+                    SUM(CASE WHEN deleted_at IS NULL THEN 1 ELSE 0 END) as active_users,
+                    SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END) as inactive_users,
+                    SUM(CASE WHEN deleted_at IS NULL AND DATE(created_at) = ? THEN 1 ELSE 0 END) as new_users_today,
+                    SUM(CASE WHEN deleted_at IS NULL AND created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as new_users_this_week,
+                    SUM(CASE WHEN deleted_at IS NULL AND MONTH(created_at) = ? AND YEAR(created_at) = ? THEN 1 ELSE 0 END) as new_users_this_month
+                FROM users
+            ", [
+                today()->toDateString(),
+                now()->startOfWeek()->toDateTimeString(),
+                now()->endOfWeek()->toDateTimeString(),
+                now()->month,
+                now()->year,
+            ]);
+
+            // Single query for all role counts
+            $roleCounts = DB::table('model_has_roles')
+                ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+                ->join('users', 'model_has_roles.model_id', '=', 'users.id')
+                ->whereNull('users.deleted_at')
+                ->whereIn('roles.name', ['customer', 'barista', 'manager', 'admin'])
+                ->selectRaw('roles.name, COUNT(*) as count')
+                ->groupBy('roles.name')
+                ->pluck('count', 'name');
+
             $stats = [
-                'total_users' => User::count(),
-                'active_users' => User::count(),
-                'inactive_users' => 0, // Not using soft deletes on User model
+                'total_users'   => (int) $userCounts->total_users,
+                'active_users'  => (int) $userCounts->active_users,
+                'inactive_users'=> (int) $userCounts->inactive_users,
                 'by_role' => [
-                    'customers' => User::role('customer')->count(),
-                    'baristas' => User::role('barista')->count(),
-                    'managers' => User::role('manager')->count(),
-                    'admins' => User::role('admin')->count(),
+                    'customers' => (int) ($roleCounts['customer'] ?? 0),
+                    'baristas'  => (int) ($roleCounts['barista'] ?? 0),
+                    'managers'  => (int) ($roleCounts['manager'] ?? 0),
+                    'admins'    => (int) ($roleCounts['admin'] ?? 0),
                 ],
-                'new_users_today' => User::whereDate('created_at', today())->count(),
-                'new_users_this_week' => User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-                'new_users_this_month' => User::whereMonth('created_at', now()->month)->count(),
+                'new_users_today'      => (int) $userCounts->new_users_today,
+                'new_users_this_week'  => (int) $userCounts->new_users_this_week,
+                'new_users_this_month' => (int) $userCounts->new_users_this_month,
             ];
 
             return $this->sendResponse($stats, 'User statistics retrieved successfully');
@@ -366,8 +399,19 @@ class AdminController extends BaseController
 
             $order->save();
 
-            // Optionally send notification to customer
-            // event(new OrderStatusUpdated($order));
+            // Broadcast real-time event and send notification to customer
+            event(new OrderStatusUpdated($order, $oldStatus, $newStatus, auth()->user()));
+
+            if ($order->user) {
+                $notifType = match ($newStatus) {
+                    'preparing' => 'status_update',
+                    'ready'     => 'order_ready',
+                    'completed' => 'order_completed',
+                    'cancelled' => 'order_cancelled',
+                    default     => 'status_update',
+                };
+                $order->user->notify(new OrderStatusNotification($order, $notifType));
+            }
 
             return $this->sendResponse($order->load(['user', 'orderItems.product']), 'Order status updated successfully');
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -385,11 +429,17 @@ class AdminController extends BaseController
     public function getDashboardStats()
     {
         try {
+            // Single query for order stats instead of 2 separate queries
+            $orderStats = Order::selectRaw("
+                COUNT(*) as total_orders,
+                SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END) as total_revenue
+            ")->first();
+
             $stats = [
-                'totalOrders' => Order::count(),
+                'totalOrders' => (int) $orderStats->total_orders,
                 'totalUsers' => User::count(),
                 'totalProducts' => Product::count(),
-                'totalRevenue' => Order::where('payment_status', 'paid')->sum('total_amount'),
+                'totalRevenue' => (float) ($orderStats->total_revenue ?? 0),
             ];
 
             // Get recent orders

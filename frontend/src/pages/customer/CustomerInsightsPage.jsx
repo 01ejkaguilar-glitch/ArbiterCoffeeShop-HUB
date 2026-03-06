@@ -75,25 +75,29 @@ const CustomerInsightsPage = () => {
   }
 
   return (
-    <Container className="py-5">
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex align-items-center justify-content-between">
-            <div>
-              <h1 className="display-5 fw-bold">Your Coffee Insights</h1>
-              <p className="lead text-muted">Discover your coffee preferences and shopping patterns</p>
-            </div>
-            <Button
-              variant="outline-primary"
-              onClick={handleExportInsights}
-              className="d-flex align-items-center"
-            >
-              <FaDownload className="me-2" />
-              Export Data
-            </Button>
-          </div>
-        </Col>
-      </Row>
+    <main role="main">
+      <Container className="py-5">
+        <header className="mb-4">
+          <Row>
+            <Col>
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <h1 className="display-5 fw-bold">Your Coffee Insights</h1>
+                  <p className="lead text-muted">Discover your coffee preferences and shopping patterns</p>
+                </div>
+                <Button
+                  variant="outline-primary"
+                  onClick={handleExportInsights}
+                  className="d-flex align-items-center"
+                  aria-label="Export insights data"
+                >
+                  <FaDownload className="me-2" aria-hidden="true" />
+                  Export Data
+                </Button>
+              </div>
+            </Col>
+          </Row>
+        </header>
 
       <Tabs defaultActiveKey="overview" className="mb-4">
         <Tab eventKey="overview" title="Overview">
@@ -105,7 +109,7 @@ const CustomerInsightsPage = () => {
             <Col lg={6}>
               <Card className="shadow-sm">
                 <Card.Header className="bg-primary text-white">
-                  <FaChartLine className="me-2" />
+                  <FaChartLine className="me-2" aria-hidden="true" />
                   Purchase History Analysis
                 </Card.Header>
                 <Card.Body>
@@ -128,7 +132,7 @@ const CustomerInsightsPage = () => {
             <Col lg={6}>
               <Card className="shadow-sm">
                 <Card.Header className="bg-success text-white">
-                  <FaHeart className="me-2" />
+                  <FaHeart className="me-2" aria-hidden="true" />
                   Product Preferences
                 </Card.Header>
                 <Card.Body>
@@ -155,7 +159,7 @@ const CustomerInsightsPage = () => {
         <Tab eventKey="predictions" title="Predictions">
           <Card className="shadow-sm">
             <Card.Header className="bg-info text-white">
-              <FaLightbulb className="me-2" />
+              <FaLightbulb className="me-2" aria-hidden="true" />
               Future Insights
             </Card.Header>
             <Card.Body>
@@ -179,6 +183,7 @@ const CustomerInsightsPage = () => {
         </Tab>
       </Tabs>
     </Container>
+    </main>
   );
 };
 

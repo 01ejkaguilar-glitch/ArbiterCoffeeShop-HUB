@@ -9,6 +9,7 @@ import API_BASE_URL from '../config/api';
 // Create axios instance
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000, // 30 second timeout
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -48,7 +49,7 @@ apiClient.interceptors.response.use(
             try {
               const refreshResponse = await apiClient.post('/auth/refresh-token');
               if (refreshResponse.data.success) {
-                const { token, expires_in } = refreshResponse.data.data;
+                const { token } = refreshResponse.data.data;
 
                 // Calculate new token expiry
                 const expiryDate = new Date();
@@ -66,12 +67,15 @@ apiClient.interceptors.response.use(
             }
           }
 
-          // If refresh failed or it's an auth endpoint, clear token and redirect
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
-          localStorage.removeItem('tokenExpiry');
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
+          // Only clear tokens/redirect if NOT an auth-check call
+          // AuthContext handles its own 401 cleanup
+          if (!originalRequest.url.includes('/auth/user') && !originalRequest.url.includes('/auth/')) {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tokenExpiry');
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
           }
           break;
         case 403:
@@ -104,16 +108,17 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Helper: check if user is online
+const isOnline = () => navigator.onLine;
+
 // API Service methods
 const apiService = {
-  // Check if user is online
-  isOnline: () => {
-    return navigator.onLine;
-  },
+  // Check if user is online (exposed for external use)
+  isOnline,
 
   // GET request
   get: async (url, params = {}, bustCache = false) => {
-    if (!apiService.isOnline()) {
+    if (!isOnline()) {
       throw new Error('No internet connection');
     }
     try {
@@ -135,6 +140,9 @@ const apiService = {
 
   // POST request
   post: async (url, data = {}, config = {}) => {
+    if (!isOnline()) {
+      throw new Error('No internet connection');
+    }
     try {
       const response = await apiClient.post(url, data, config);
       return response.data;
@@ -145,6 +153,9 @@ const apiService = {
 
   // PUT request
   put: async (url, data = {}) => {
+    if (!isOnline()) {
+      throw new Error('No internet connection');
+    }
     try {
       const response = await apiClient.put(url, data);
       return response.data;
@@ -155,6 +166,9 @@ const apiService = {
 
   // PATCH request
   patch: async (url, data = {}) => {
+    if (!isOnline()) {
+      throw new Error('No internet connection');
+    }
     try {
       const response = await apiClient.patch(url, data);
       return response.data;
@@ -165,6 +179,9 @@ const apiService = {
 
   // DELETE request
   delete: async (url) => {
+    if (!isOnline()) {
+      throw new Error('No internet connection');
+    }
     try {
       const response = await apiClient.delete(url, {
         headers: {
@@ -180,6 +197,9 @@ const apiService = {
 
   // Upload file
   upload: async (url, formData, onUploadProgress = null) => {
+    if (!isOnline()) {
+      throw new Error('No internet connection');
+    }
     try {
       const response = await apiClient.post(url, formData, {
         headers: {

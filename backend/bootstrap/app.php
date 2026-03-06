@@ -11,6 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
+    ->withBroadcasting(
+        channels: __DIR__ . '/../routes/channels.php',
+    )
     ->withMiddleware(function (Middleware $middleware): void {
         // Register Spatie Permission middleware aliases
         $middleware->alias([
@@ -19,6 +22,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'cache.response' => \App\Http\Middleware\CacheResponse::class,
             'throttle.user' => \App\Http\Middleware\ThrottleByUser::class,
+        ]);
+
+        // Register Prerender middleware for web routes
+        $middleware->web(append: [
+            \App\Http\Middleware\PrerenderMiddleware::class,
         ]);
 
         // Register API performance monitoring and compression middleware
@@ -92,14 +100,14 @@ return Application::configure(basePath: dirname(__DIR__))
             ->runInBackground();
 
         // Clean up old logs weekly on Sunday at 3 AM
-        $schedule->command('logs:clean --days=30')
-            ->weeklyOn(0, '03:00')
-            ->withoutOverlapping()
-            ->runInBackground();
+        // $schedule->command('logs:clean --days=30')
+        //     ->weeklyOn(0, '03:00')
+        //     ->withoutOverlapping()
+        //     ->runInBackground();
 
         // Health check monitoring every 5 minutes
-        $schedule->command('health:check')
-            ->everyFiveMinutes()
-            ->withoutOverlapping()
-            ->runInBackground();
+        // $schedule->command('health:check')
+        //     ->everyFiveMinutes()
+        //     ->withoutOverlapping()
+        //     ->runInBackground();
     })->create();

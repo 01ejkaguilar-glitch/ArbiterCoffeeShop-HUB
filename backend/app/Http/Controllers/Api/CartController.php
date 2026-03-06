@@ -12,37 +12,55 @@ use Illuminate\Support\Facades\DB;
 class CartController extends BaseController
 {
     /**
+     * Build a normalised cart response with items, subtotal, etc.
+     */
+    private function cartResponse(Cart $cart): array
+    {
+        $cartItems = CartItem::where('cart_id', $cart->id)
+            ->with('product')
+            ->get();
+
+        // Map items so every item carries unit_price from product
+        $items = $cartItems->map(function ($item) {
+            return [
+                'id'                   => $item->id,
+                'cart_id'              => $item->cart_id,
+                'product_id'           => $item->product_id,
+                'quantity'             => $item->quantity,
+                'unit_price'           => (float) ($item->product->price ?? 0),
+                'customizations'       => $item->customizations,
+                'special_instructions' => $item->customizations['special_instructions'] ?? null,
+                'product'              => $item->product,
+                'created_at'           => $item->created_at,
+                'updated_at'           => $item->updated_at,
+            ];
+        });
+
+        $subtotal = $items->sum(fn($i) => $i['unit_price'] * $i['quantity']);
+
+        return [
+            'cart_id'      => $cart->id,
+            'items'        => $items->values(),
+            'subtotal'     => round($subtotal, 2),
+            'total_items'  => $items->sum('quantity'),
+            'total_amount' => round($subtotal, 2),
+        ];
+    }
+
+    /**
      * Get cart contents
-     *
-     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
         try {
             $user = Auth::user();
 
-            // Get or create cart for user
             $cart = Cart::firstOrCreate(
                 ['user_id' => $user->id],
                 ['user_id' => $user->id]
             );
 
-            $cartItems = CartItem::where('cart_id', $cart->id)
-                ->with('product')
-                ->get();
-
-            $totalAmount = $cartItems->sum(function ($item) {
-                return $item->quantity * $item->product->price;
-            });
-
-            $cartData = [
-                'cart_id' => $cart->id,
-                'items' => $cartItems,
-                'total_items' => $cartItems->sum('quantity'),
-                'total_amount' => number_format($totalAmount, 2),
-            ];
-
-            return $this->sendResponse($cartData, 'Cart retrieved successfully');
+            return $this->sendResponse($this->cartResponse($cart), 'Cart retrieved successfully');
         } catch (\Exception $e) {
             return $this->sendError('Failed to retrieve cart', 500, ['error' => $e->getMessage()]);
         }
@@ -50,9 +68,6 @@ class CartController extends BaseController
 
     /**
      * Add item to cart
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function addItem(Request $request)
     {
@@ -65,20 +80,17 @@ class CartController extends BaseController
 
             $user = Auth::user();
 
-            // Check if product is available
             $productId = $request->input('product_id');
             $product = Product::findOrFail($productId);
             if (!$product->is_available) {
                 return $this->sendError('Product is not available', 400);
             }
 
-            // Get or create cart
             $cart = Cart::firstOrCreate(
                 ['user_id' => $user->id],
                 ['user_id' => $user->id]
             );
 
-            // Check if item already exists in cart
             $existingItem = CartItem::where('cart_id', $cart->id)
                 ->where('product_id', $productId)
                 ->first();
@@ -87,16 +99,13 @@ class CartController extends BaseController
             $customizations = $request->has('customizations') ? $request->input('customizations') : null;
 
             if ($existingItem) {
-                // Update quantity
                 $existingItem->quantity += $quantity;
                 if ($customizations !== null) {
                     $existingItem->customizations = $customizations;
                 }
                 $existingItem->save();
-                $cartItem = $existingItem;
             } else {
-                // Create new cart item
-                $cartItem = CartItem::create([
+                CartItem::create([
                     'cart_id' => $cart->id,
                     'product_id' => $productId,
                     'quantity' => $quantity,
@@ -104,9 +113,7 @@ class CartController extends BaseController
                 ]);
             }
 
-            $cartItem->load('product');
-
-            return $this->sendResponse($cartItem, 'Item added to cart successfully', 201);
+            return $this->sendResponse($this->cartResponse($cart), 'Item added to cart successfully', 201);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->sendValidationError($e->errors());
@@ -117,10 +124,6 @@ class CartController extends BaseController
 
     /**
      * Update cart item
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
     public function updateItem(Request $request, $id)
     {
@@ -150,9 +153,7 @@ class CartController extends BaseController
                 'customizations' => $request->has('customizations') ? $request->input('customizations') : $cartItem->customizations,
             ]);
 
-            $cartItem->load('product');
-
-            return $this->sendResponse($cartItem, 'Cart item updated successfully');
+            return $this->sendResponse($this->cartResponse($cart), 'Cart item updated successfully');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->sendValidationError($e->errors());
@@ -163,9 +164,6 @@ class CartController extends BaseController
 
     /**
      * Remove item from cart
-     *
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
      */
     public function removeItem($id)
     {
@@ -187,7 +185,7 @@ class CartController extends BaseController
 
             $cartItem->delete();
 
-            return $this->sendResponse(null, 'Item removed from cart successfully', 204);
+            return $this->sendResponse($this->cartResponse($cart), 'Item removed from cart successfully');
 
         } catch (\Exception $e) {
             return $this->sendError('Failed to remove item from cart', 500, ['error' => $e->getMessage()]);
@@ -196,8 +194,6 @@ class CartController extends BaseController
 
     /**
      * Clear cart
-     *
-     * @return \Illuminate\Http\JsonResponse
      */
     public function clear()
     {

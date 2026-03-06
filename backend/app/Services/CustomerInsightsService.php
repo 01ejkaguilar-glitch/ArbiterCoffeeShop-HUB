@@ -256,16 +256,16 @@ class CustomerInsightsService
         // Get orders with multiple items
         $orders = Order::where('user_id', $customerId)
             ->where('status', 'completed')
-            ->with('items.product')
+            ->with('orderItems.product')
             ->get();
 
         $combinations = [];
         $totalOrders = $orders->count();
 
         foreach ($orders as $order) {
-            if ($order->items->count() < 2) continue;
+            if ($order->orderItems->count() < 2) continue;
 
-            $products = $order->items->pluck('product.name')->toArray();
+            $products = $order->orderItems->pluck('product.name')->toArray();
             
             // Create pairs
             for ($i = 0; $i < count($products); $i++) {

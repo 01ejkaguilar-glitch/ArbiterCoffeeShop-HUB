@@ -1,125 +1,195 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaCoffee } from 'react-icons/fa';
+import React, { useState, useCallback } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaExclamationCircle, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../components/animations/Toast';
+import { FadeIn, SlideInUp } from '../../components/animations/AnimationWrappers';
+import './Auth.css';
 
 const LoginPage = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const toast = useToast();
+  const returnUrl = location.state?.from || '/dashboard';
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(email, password, rememberMe);
       if (result.success) {
-        navigate('/dashboard');
+        toast.success('Welcome back!');
+        navigate(returnUrl);
       } else {
-        setError(result.message || 'Login failed. Please try again.');
+        const msg = result.message || 'Login failed. Please try again.';
+        setError(msg);
+        toast.error(msg);
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, rememberMe, login, toast, navigate, returnUrl]);
 
   return (
-    <Container className="py-5">
-      <Row className="justify-content-center">
-        <Col md={6} lg={5}>
-          <Card className="shadow-md-green">
-            <Card.Body className="p-5">
-              <div className="text-center mb-4">
-                <FaCoffee size={48} className="text-primary mb-3" />
-                <h2 className="fw-bold">Welcome Back</h2>
-                <p className="text-muted">Login to your account</p>
-              </div>
+    <main role="main" className="auth-page">
+      {/* ── Brand Panel (desktop only) ── */}
+      <div className="auth-brand-panel" aria-hidden="true">
+        <div className="auth-brand-content">
+          <img
+            src="/assets/arbiter-logo-white.png"
+            alt=""
+            className="auth-brand-logo"
+          />
+          <h2 className="auth-brand-title">Arbiter Coffee</h2>
+          <p className="auth-brand-tagline">
+            Premium artisan coffee, crafted with care and delivered to&nbsp;your&nbsp;door.
+          </p>
+        </div>
+        <div className="auth-brand-decoration" />
+        <div className="auth-brand-decoration-sm" />
+      </div>
+
+      {/* ── Form Panel ── */}
+      <div className="auth-form-panel">
+        <div className="auth-form-container">
+          <FadeIn duration={0.3}>
+            {/* Mobile brand header */}
+            <div className="auth-mobile-brand">
+              <img src="/assets/arbiter-logo.png" alt="" className="auth-mobile-logo" />
+              <span className="auth-mobile-name">Arbiter Coffee</span>
+            </div>
+
+            <SlideInUp duration={0.4} delay={0.05}>
+              <header className="auth-header">
+                <h1 id="login-heading" className="auth-heading">Welcome Back</h1>
+                <p className="auth-subheading">Sign in to your account to continue</p>
+              </header>
 
               {error && (
-                <Alert variant="danger" onClose={() => setError('')} dismissible>
-                  {error}
-                </Alert>
+                <div className="auth-alert auth-alert--error" role="alert">
+                  <FaExclamationCircle className="auth-alert-icon" aria-hidden="true" />
+                  <span>{error}</span>
+                  <button
+                    type="button"
+                    className="auth-alert-dismiss"
+                    onClick={() => setError('')}
+                    aria-label="Dismiss error"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
               )}
 
-              <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    <FaEnvelope className="me-2" />
+              <form onSubmit={handleSubmit} aria-labelledby="login-heading" noValidate>
+                {/* Email */}
+                <div className="auth-field">
+                  <label htmlFor="login-email" className="auth-field-label">
+                    <FaEnvelope aria-hidden="true" />
                     Email Address
-                  </Form.Label>
-                  <Form.Control
+                    <span className="auth-field-required" aria-label="required">*</span>
+                  </label>
+                  <input
+                    id="login-email"
                     type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
+                    className="auth-input"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="your@email.com"
-                    size="lg"
+                    autoComplete="email"
+                    aria-required="true"
+                    aria-invalid={error ? 'true' : 'false'}
                   />
-                </Form.Group>
+                </div>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>
-                    <FaLock className="me-2" />
+                {/* Password */}
+                <div className="auth-field">
+                  <label htmlFor="login-password" className="auth-field-label">
+                    <FaLock aria-hidden="true" />
                     Password
-                  </Form.Label>
-                  <Form.Control
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    placeholder="Enter your password"
-                    size="lg"
-                  />
-                </Form.Group>
+                    <span className="auth-field-required" aria-label="required">*</span>
+                  </label>
+                  <div className="auth-password-wrapper">
+                    <input
+                      id="login-password"
+                      type={showPassword ? 'text' : 'password'}
+                      className="auth-input"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      placeholder="Enter your password"
+                      autoComplete="current-password"
+                      aria-required="true"
+                      aria-invalid={error ? 'true' : 'false'}
+                    />
+                    <button
+                      type="button"
+                      className="auth-password-toggle"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </div>
 
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                  <Form.Check type="checkbox" label="Remember me" />
-                  <Link to="/forgot-password" className="text-decoration-none">
+                {/* Remember me / Forgot */}
+                <div className="auth-options-row">
+                  <label className="auth-checkbox-label">
+                    <input
+                      type="checkbox"
+                      className="auth-checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+                    Remember me
+                  </label>
+                  <Link to="/forgot-password" className="auth-forgot-link">
                     Forgot password?
                   </Link>
                 </div>
 
-                <Button
+                {/* Submit */}
+                <button
                   type="submit"
-                  variant="primary"
-                  size="lg"
-                  className="w-100 mb-3"
-                  disabled={loading}
+                  className="auth-submit-btn"
+                  disabled={loading || !email || !password}
                 >
-                  {loading ? 'Logging in...' : 'Login'}
-                </Button>
+                  {loading ? (
+                    <>
+                      <span className="auth-spinner" />
+                      Signing in…
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
+              </form>
 
-                <div className="text-center">
-                  <span className="text-muted">Don't have an account? </span>
-                  <Link to="/register" className="text-decoration-none fw-bold">
-                    Sign up
-                  </Link>
-                </div>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+              <p className="auth-footer">
+                Don&apos;t have an account?{' '}
+                <Link to="/register" className="auth-footer-link">
+                  Create one
+                </Link>
+              </p>
+            </SlideInUp>
+          </FadeIn>
+        </div>
+      </div>
+    </main>
   );
 };
 

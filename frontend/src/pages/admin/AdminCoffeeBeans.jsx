@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Badge, Modal, Form, Alert, Spinner, InputGroup, Table } from 'react-bootstrap';
-import { FaCoffee, FaEdit, FaTrash, FaSearch, FaStar, FaPlus, FaArchive } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Row, Col, Card, Button, Badge, Modal, Form, Alert, InputGroup, Table } from 'react-bootstrap';
+import { FaEdit, FaTrash, FaSearch, FaStar, FaPlus } from 'react-icons/fa';
 import { API_ENDPOINTS } from '../../config/api';
 import { BACKEND_BASE_URL } from '../../config/api';
 import apiService from '../../services/api.service';
-import Loading from '../../components/common/Loading';
+import LoadingFallback from '../../components/common/LoadingFallback';
 
 const AdminCoffeeBeans = () => {
   const [beans, setBeans] = useState([]);
@@ -29,11 +29,7 @@ const AdminCoffeeBeans = () => {
     is_featured: false
   });
 
-  useEffect(() => {
-    fetchCoffeeBeans();
-  }, []);
-
-  const fetchCoffeeBeans = async (bustCache = false) => {
+  const fetchCoffeeBeans = useCallback(async (bustCache = false) => {
     try {
       setLoading(true);
       const response = await apiService.get(`${API_ENDPOINTS.COFFEE_BEANS.LIST}?per_page=1000`, {}, bustCache);
@@ -46,7 +42,11 @@ const AdminCoffeeBeans = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCoffeeBeans();
+  }, [fetchCoffeeBeans]);
 
   const handleShowModal = (bean = null) => {
     if (bean) {
@@ -193,7 +193,7 @@ const AdminCoffeeBeans = () => {
   };
 
   if (loading) {
-    return <Loading message="Loading coffee beans..." />;
+    return <LoadingFallback message="Loading coffee beans..." />;
   }
 
   return (
@@ -220,36 +220,36 @@ const AdminCoffeeBeans = () => {
       )}
 
       {/* Stats Cards */}
-      <Row className="mb-4">
-        <Col md={3}>
+      <Row className="mb-4 g-2 g-md-3">
+        <Col xs={6} md={3}>
           <Card className="border-0 shadow-sm">
-            <Card.Body>
-              <h6 className="text-muted mb-2">Total Beans</h6>
-              <h3 className="mb-0">{beans.length}</h3>
+            <Card.Body className="p-2 p-md-3">
+              <h6 className="text-muted mb-1 small">Total Beans</h6>
+              <h3 className="mb-0 fs-5 fs-md-3">{beans.length}</h3>
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col xs={6} md={3}>
           <Card className="border-0 shadow-sm">
-            <Card.Body>
-              <h6 className="text-muted mb-2">Featured</h6>
-              <h3 className="mb-0 text-warning">{beans.filter(b => b.is_featured).length}</h3>
+            <Card.Body className="p-2 p-md-3">
+              <h6 className="text-muted mb-1 small">Featured</h6>
+              <h3 className="mb-0 fs-5 fs-md-3 text-warning">{beans.filter(b => b.is_featured).length}</h3>
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col xs={6} md={3}>
           <Card className="border-0 shadow-sm">
-            <Card.Body>
-              <h6 className="text-muted mb-2">Low Stock</h6>
-              <h3 className="mb-0 text-warning">{beans.filter(b => b.stock_quantity < 10 && b.stock_quantity > 0).length}</h3>
+            <Card.Body className="p-2 p-md-3">
+              <h6 className="text-muted mb-1 small">Low Stock</h6>
+              <h3 className="mb-0 fs-5 fs-md-3 text-warning">{beans.filter(b => b.stock_quantity < 10 && b.stock_quantity > 0).length}</h3>
             </Card.Body>
           </Card>
         </Col>
-        <Col md={3}>
+        <Col xs={6} md={3}>
           <Card className="border-0 shadow-sm">
-            <Card.Body>
-              <h6 className="text-muted mb-2">Out of Stock</h6>
-              <h3 className="mb-0 text-danger">{beans.filter(b => b.stock_quantity === 0).length}</h3>
+            <Card.Body className="p-2 p-md-3">
+              <h6 className="text-muted mb-1 small">Out of Stock</h6>
+              <h3 className="mb-0 fs-5 fs-md-3 text-danger">{beans.filter(b => b.stock_quantity === 0).length}</h3>
             </Card.Body>
           </Card>
         </Col>
@@ -299,6 +299,7 @@ const AdminCoffeeBeans = () => {
                         width="50"
                         height="50"
                         className="rounded"
+                        loading="lazy"
                       />
                     </td>
                     <td>
@@ -489,7 +490,7 @@ const AdminCoffeeBeans = () => {
                 </Form.Group>
                 {imagePreview && (
                   <div>
-                    <img src={imagePreview} alt="Preview" className="img-thumbnail" style={{ maxHeight: '150px' }} />
+                    <img src={imagePreview} alt="Preview" className="img-thumbnail" style={{ maxHeight: '150px' }} loading="lazy" />
                   </div>
                 )}
               </Col>

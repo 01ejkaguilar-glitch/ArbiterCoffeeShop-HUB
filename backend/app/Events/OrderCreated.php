@@ -32,6 +32,7 @@ class OrderCreated implements ShouldBroadcast
     {
         return [
             new Channel('barista-orders'),
+            new Channel('kitchen-orders'),
         ];
     }
 

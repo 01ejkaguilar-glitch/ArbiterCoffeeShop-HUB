@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Table, Button, Modal, Form, Badge, Alert } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Alert } from 'react-bootstrap';
+import { FaPlus, FaBoxOpen, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaLayerGroup } from 'react-icons/fa';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
-import { BACKEND_BASE_URL } from '../../config/api';
-import Loading from '../../components/common/Loading';
+import ProductFormModal from './components/ProductFormModal';
+import ProductTable from './components/ProductTable';
+import BatchActionModal from './components/BatchActionModal';
+import PageShell from '../../components/layout/PageShell';
+import './AdminProducts.css';
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
@@ -27,6 +30,12 @@ const AdminProducts = () => {
   const [categories, setCategories] = useState([]);
   const [alert, setAlert] = useState({ show: false, message: '', type: '' });
 
+  // Search / filter / sort state
+  const [search, setSearch] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterAvail, setFilterAvail] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
@@ -34,7 +43,9 @@ const AdminProducts = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await apiService.get(API_ENDPOINTS.PRODUCTS.LIST);
+      // Use the admin-specific endpoint — bypasses the public cache so the list
+      // is always fresh and includes products regardless of availability status.
+      const response = await apiService.get(API_ENDPOINTS.ADMIN.PRODUCTS.LIST);
       if (response.success && response.data) {
         // Handle paginated response - extract the data array
         const productsData = response.data.data || response.data;
@@ -149,7 +160,7 @@ const AdminProducts = () => {
         }
       } else {
         // Use regular JSON for non-file uploads
-        const dataToSend = { 
+        const dataToSend = {
           ...formData,
           price: parseFloat(formData.price) || 0,
           stock_quantity: parseInt(formData.stock_quantity) || 0,
@@ -181,7 +192,7 @@ const AdminProducts = () => {
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to save product';
       const validationErrors = error.response?.data?.errors;
-      
+
       if (validationErrors) {
         const errorDetails = Object.values(validationErrors).flat().join(', ');
         setAlert({
@@ -274,327 +285,194 @@ const AdminProducts = () => {
     }
   };
 
-  if (loading) {
-    return <Loading message="Loading products..." />;
-  }
+  // ── Derived: filtered + sorted products ─────────────────────
+  const filteredProducts = useMemo(() => {
+    let list = [...products];
+    const q = search.trim().toLowerCase();
+    if (q) list = list.filter(p => p.name.toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q) ||
+      String(p.id) === q);
+    if (filterCategory) list = list.filter(p => String(p.category_id) === filterCategory);
+    if (filterAvail === 'yes') list = list.filter(p => p.is_available);
+    if (filterAvail === 'no')  list = list.filter(p => !p.is_available);
+    list.sort((a, b) => {
+      if (sortBy === 'name')  return a.name.localeCompare(b.name);
+      if (sortBy === 'price') return parseFloat(a.price) - parseFloat(b.price);
+      if (sortBy === 'stock') return Number(a.stock_quantity) - Number(b.stock_quantity);
+      return b.id - a.id; // newest
+    });
+    return list;
+  }, [products, search, filterCategory, filterAvail, sortBy]);
+
+  // ── Stats ────────────────────────────────────────────────────
+  const stats = useMemo(() => ({
+    total:     products.length,
+    available: products.filter(p => p.is_available).length,
+    unavailable: products.filter(p => !p.is_available).length,
+    lowStock:  products.filter(p => Number(p.stock_quantity) <= 10 && Number(p.stock_quantity) > 0).length,
+  }), [products]);
 
   return (
-    <Container className="py-5">
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <h1 className="display-5 fw-bold">Products Management</h1>
-              <p className="lead text-muted">Manage your product catalog</p>
-            </div>
-            <div>
-              {selectedProducts.length > 0 && (
-                <Button variant="warning" className="me-2" onClick={() => setShowBatchModal(true)}>
-                  Batch Actions ({selectedProducts.length})
-                </Button>
-              )}
-              <Button variant="primary" size="lg" onClick={() => handleShowModal()}>
-                <FaPlus className="me-2" />
-                Add Product
-              </Button>
-            </div>
-          </div>
-        </Col>
-      </Row>
-
+    <PageShell
+      title="Products Management"
+      subtitle="Manage your product catalog"
+      loading={loading}
+      headerRight={
+        <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+          {selectedProducts.length > 0 && (
+            <button className="ap-batch-btn" onClick={() => setShowBatchModal(true)}>
+              <FaLayerGroup size={13} />
+              Batch Edit ({selectedProducts.length})
+            </button>
+          )}
+          <button className="ap-add-btn" onClick={() => handleShowModal()}>
+            <FaPlus size={13} />
+            Add Product
+          </button>
+        </div>
+      }
+    >
+      {/* Alert */}
       {alert.show && (
-        <Row className="mb-3">
-          <Col>
-            <Alert variant={alert.type} onClose={() => setAlert({ show: false, message: '', type: '' })} dismissible>
-              {alert.message}
-            </Alert>
-          </Col>
-        </Row>
+        <Alert
+          variant={alert.type}
+          onClose={() => setAlert({ show: false, message: '', type: '' })}
+          dismissible
+          className="mb-4"
+        >
+          {alert.message}
+        </Alert>
       )}
 
-      <Row>
-        <Col>
-          <Card className="shadow-sm">
-            <Card.Body>
-              <Table responsive hover>
-                <thead>
-                  <tr>
-                    <th>
-                      <Form.Check
-                        type="checkbox"
-                        checked={selectedProducts.length === products.length && products.length > 0}
-                        onChange={toggleSelectAll}
-                      />
-                    </th>
-                    <th>ID</th>
-                    <th>Product</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.length > 0 ? (
-                    products.map((product) => (
-                      <tr key={product.id}>
-                        <td>
-                          <Form.Check
-                            type="checkbox"
-                            checked={selectedProducts.includes(product.id)}
-                            onChange={() => toggleProductSelection(product.id)}
-                          />
-                        </td>
-                        <td>{product.id}</td>
-                        <td>
-                          <div className="d-flex align-items-center">
-                            <img
-                              src={product.image_url ? `${BACKEND_BASE_URL}${product.image_url}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zNWVtIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj5ObyBJbWFnZTwvdGV4dD4KPHN2Zz4='}
-                              alt={product.name}
-                              width="50"
-                              height="50"
-                              className="rounded me-2"
-                            />
-                            <span>{product.name}</span>
-                          </div>
-                        </td>
-                        <td>{product.category?.name || 'N/A'}</td>
-                        <td>₱{product.price}</td>
-                        <td>{product.stock_quantity}</td>
-                        <td>
-                          <Badge bg={product.is_available ? 'success' : 'danger'}>
-                            {product.is_available ? 'Available' : 'Unavailable'}
-                          </Badge>
-                        </td>
-                        <td>
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleShowModal(product)}
-                          >
-                            <FaEdit />
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDelete(product.id)}
-                          >
-                            <FaTrash />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="8" className="text-center text-muted py-4">
-                        No products found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      {/* Stats Bar */}
+      {!loading && (
+        <div className="ap-stats-bar">
+          <div className="ap-stat-card">
+            <div className="ap-stat-icon blue"><FaBoxOpen /></div>
+            <div>
+              <div className="ap-stat-value">{stats.total}</div>
+              <div className="ap-stat-label">Total Products</div>
+            </div>
+          </div>
+          <div className="ap-stat-card">
+            <div className="ap-stat-icon green"><FaCheckCircle /></div>
+            <div>
+              <div className="ap-stat-value">{stats.available}</div>
+              <div className="ap-stat-label">Available</div>
+            </div>
+          </div>
+          <div className="ap-stat-card">
+            <div className="ap-stat-icon red"><FaTimesCircle /></div>
+            <div>
+              <div className="ap-stat-value">{stats.unavailable}</div>
+              <div className="ap-stat-label">Unavailable</div>
+            </div>
+          </div>
+          <div className="ap-stat-card">
+            <div className="ap-stat-icon amber"><FaExclamationTriangle /></div>
+            <div>
+              <div className="ap-stat-value">{stats.lowStock}</div>
+              <div className="ap-stat-label">Low Stock (≤10)</div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Add/Edit Product Modal */}
-      <Modal show={showModal} onHide={handleCloseModal} size="lg">
-        <Modal.Header closeButton className="bg-primary text-white">
-          <Modal.Title>{editingProduct ? 'Edit Product' : 'Add New Product'}</Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleSubmit}>
-          <Modal.Body>
-            <Form.Group className="mb-3">
-              <Form.Label>Product Name *</Form.Label>
-              <Form.Control
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
+      {/* Filter Bar */}
+      {!loading && (
+        <div className="ap-filter-bar">
+          {/* Search */}
+          <div className="ap-search-wrap">
+            <svg className="ap-search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="search"
+              className="ap-search-input"
+              placeholder="Search by name or ID…"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setSelectedProducts([]); }}
+            />
+          </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Description</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Product Image</Form.Label>
-              <Form.Control
-                type="file"
-                name="image"
-                accept="image/*"
-                onChange={handleChange}
-              />
-              <Form.Text className="text-muted">
-                Supported formats: JPEG, PNG, JPG, GIF, SVG. Max size: 2MB
-              </Form.Text>
-              {editingProduct && editingProduct.image_url && (
-                <div className="mt-2">
-                  <small className="text-muted">Current image:</small>
-                  <br />
-                  <img
-                    src={editingProduct.image_url ? `${BACKEND_BASE_URL}${editingProduct.image_url}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjI1IiB5PSIyNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zNWVtIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjEwIj5ObyBJbWFnZTwvdGV4dD4KPHN2Zz4='}
-                    alt="Current product"
-                    style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
-                    className="border rounded"
-                  />
-                </div>
-              )}
-            </Form.Group>
-
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Price *</Form.Label>
-                  <Form.Control
-                    type="number"
-                    step="0.01"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Stock Quantity *</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="stock_quantity"
-                    value={formData.stock_quantity}
-                    onChange={handleChange}
-                    required
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Category *</Form.Label>
-              <Form.Select
-                name="category_id"
-                value={formData.category_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select Category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Check
-                type="checkbox"
-                name="is_available"
-                label="Available for sale"
-                checked={formData.is_available}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleCloseModal}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit">
-              {editingProduct ? 'Update Product' : 'Create Product'}
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-
-      {/* Batch Actions Modal */}
-      <Modal show={showBatchModal} onHide={() => setShowBatchModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Batch Update ({selectedProducts.length} products)</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Group className="mb-3">
-            <Form.Label>Action</Form.Label>
-            <Form.Select
-              value={batchAction}
-              onChange={(e) => {
-                setBatchAction(e.target.value);
-                setBatchValue('');
-              }}
-            >
-              <option value="">Select action...</option>
-              <option value="price">Update Price</option>
-              <option value="stock">Update Stock</option>
-              <option value="available">Update Availability</option>
-            </Form.Select>
-          </Form.Group>
-
-          {batchAction === 'price' && (
-            <Form.Group className="mb-3">
-              <Form.Label>New Price</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                value={batchValue}
-                onChange={(e) => setBatchValue(e.target.value)}
-                placeholder="Enter new price"
-              />
-            </Form.Group>
-          )}
-
-          {batchAction === 'stock' && (
-            <Form.Group className="mb-3">
-              <Form.Label>New Stock Quantity</Form.Label>
-              <Form.Control
-                type="number"
-                value={batchValue}
-                onChange={(e) => setBatchValue(e.target.value)}
-                placeholder="Enter new stock quantity"
-              />
-            </Form.Group>
-          )}
-
-          {batchAction === 'available' && (
-            <Form.Group className="mb-3">
-              <Form.Label>Availability Status</Form.Label>
-              <Form.Select
-                value={batchValue}
-                onChange={(e) => setBatchValue(e.target.value)}
-              >
-                <option value="">Select status...</option>
-                <option value="true">Available</option>
-                <option value="false">Unavailable</option>
-              </Form.Select>
-            </Form.Group>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowBatchModal(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleBatchAction}
-            disabled={!batchAction || !batchValue}
+          {/* Category filter */}
+          <select
+            className="ap-filter-select"
+            value={filterCategory}
+            onChange={e => { setFilterCategory(e.target.value); setSelectedProducts([]); }}
+            aria-label="Filter by category"
           >
-            Apply to {selectedProducts.length} Products
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+            <option value="">All Categories</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          {/* Availability filter */}
+          <select
+            className="ap-filter-select"
+            value={filterAvail}
+            onChange={e => { setFilterAvail(e.target.value); setSelectedProducts([]); }}
+            aria-label="Filter by availability"
+          >
+            <option value="">All Status</option>
+            <option value="yes">Available</option>
+            <option value="no">Unavailable</option>
+          </select>
+
+          {/* Sort */}
+          <select
+            className="ap-filter-select"
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+            aria-label="Sort by"
+          >
+            <option value="name">Sort: Name A–Z</option>
+            <option value="price">Sort: Price ↑</option>
+            <option value="stock">Sort: Stock ↑</option>
+            <option value="newest">Sort: Newest</option>
+          </select>
+
+          <span className="ap-filter-results">
+            {filteredProducts.length} of {products.length}
+          </span>
+        </div>
+      )}
+
+      {/* Product Table */}
+      <ProductTable
+        products={filteredProducts}
+        categories={categories}
+        selectedProducts={selectedProducts}
+        onToggleSelection={toggleProductSelection}
+        onToggleSelectAll={toggleSelectAll}
+        onEdit={handleShowModal}
+        onDelete={handleDelete}
+      />
+
+      {/* Form Modal */}
+      <ProductFormModal
+        show={showModal}
+        onHide={handleCloseModal}
+        editingProduct={editingProduct}
+        formData={formData}
+        onFormChange={handleChange}
+        categories={categories}
+        onSubmit={handleSubmit}
+      />
+
+      {/* Batch Modal */}
+      <BatchActionModal
+        show={showBatchModal}
+        onHide={() => setShowBatchModal(false)}
+        selectedCount={selectedProducts.length}
+        batchAction={batchAction}
+        setBatchAction={setBatchAction}
+        batchValue={batchValue}
+        setBatchValue={setBatchValue}
+        onApply={handleBatchAction}
+      />
+    </PageShell>
   );
 };
 

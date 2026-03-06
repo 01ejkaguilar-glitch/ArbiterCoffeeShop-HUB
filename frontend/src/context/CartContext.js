@@ -3,7 +3,7 @@
  * Manages shopping cart state across the application
  */
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import apiService from '../services/api.service';
 import { API_ENDPOINTS } from '../config/api';
 import { useAuth } from './AuthContext';
@@ -20,30 +20,60 @@ export const useCart = () => {
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState(null);
-  const [cartCount, setCartCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const { isAuthenticated } = useAuth();
 
   // Load cart from localStorage for guests, or fetch from API for authenticated users
   useEffect(() => {
     if (isAuthenticated) {
-      fetchCart();
+      mergeGuestCartThenFetch();
     } else {
       loadLocalCart();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
-  // Update cart count whenever cart changes
-  useEffect(() => {
-    if (cart && cart.items) {
-      const count = cart.items.reduce((total, item) => total + item.quantity, 0);
-      setCartCount(count);
-    } else {
-      setCartCount(0);
+  /**
+   * On login, merge any guest cart items into the server cart, then fetch.
+   */
+  const mergeGuestCartThenFetch = async () => {
+    try {
+      const localCartRaw = localStorage.getItem('guestCart');
+      if (localCartRaw) {
+        const guestCart = JSON.parse(localCartRaw);
+        if (guestCart.items && guestCart.items.length > 0) {
+          // Add each guest item to the server cart
+          for (const item of guestCart.items) {
+            try {
+              await apiService.post(API_ENDPOINTS.CART.ADD_ITEM, {
+                product_id: item.product_id,
+                quantity: item.quantity,
+                special_instructions: item.special_instructions || '',
+              });
+            } catch (err) {
+              // Item may no longer be available — skip silently
+              console.warn('Could not merge guest cart item:', item.product_id, err);
+            }
+          }
+        }
+        localStorage.removeItem('guestCart');
+      }
+    } catch (err) {
+      console.error('Error merging guest cart:', err);
+      localStorage.removeItem('guestCart');
     }
+    await fetchCart();
+  };
+
+  // Memoize cartCount from cart to avoid separate state
+  const cartCount = useMemo(() => {
+    if (cart && cart.items) {
+      return cart.items.reduce((total, item) => total + item.quantity, 0);
+    }
+    return 0;
   }, [cart]);
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     if (!isAuthenticated) return;
     
     try {
@@ -57,7 +87,7 @@ export const CartProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
   const loadLocalCart = () => {
     const localCart = localStorage.getItem('guestCart');
@@ -72,7 +102,7 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('guestCart', JSON.stringify(cartData));
   };
 
-  const addToCart = async (product, quantity = 1, specialInstructions = '') => {
+  const addToCart = useCallback(async (product, quantity = 1, specialInstructions = '') => {
     try {
       setLoading(true);
 
@@ -89,14 +119,13 @@ export const CartProvider = ({ children }) => {
           return { success: true, message: 'Product added to cart' };
         }
       } else {
-        // Add to local cart
-        const localCart = { ...cart };
-        const existingItem = localCart.items?.find((item) => item.product_id === product.id);
+        // Add to local cart (deep copy to avoid state mutation)
+        const localCart = { ...cart, items: cart.items ? cart.items.map(i => ({ ...i })) : [] };
+        const existingItem = localCart.items.find((item) => item.product_id === product.id);
 
         if (existingItem) {
           existingItem.quantity += quantity;
         } else {
-          if (!localCart.items) localCart.items = [];
           localCart.items.push({
             id: Date.now(),
             product_id: product.id,
@@ -126,9 +155,9 @@ export const CartProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated, cart]);
 
-  const updateCartItem = async (itemId, quantity) => {
+  const updateCartItem = useCallback(async (itemId, quantity) => {
     try {
       setLoading(true);
 
@@ -142,7 +171,8 @@ export const CartProvider = ({ children }) => {
           return { success: true };
         }
       } else {
-        const localCart = { ...cart };
+        // Deep copy to avoid state mutation
+        const localCart = { ...cart, items: cart.items ? cart.items.map(i => ({ ...i })) : [] };
         const item = localCart.items.find((item) => item.id === itemId);
 
         if (item) {
@@ -165,9 +195,9 @@ export const CartProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated, cart]);
 
-  const removeFromCart = async (itemId) => {
+  const removeFromCart = useCallback(async (itemId) => {
     try {
       setLoading(true);
 
@@ -179,8 +209,10 @@ export const CartProvider = ({ children }) => {
           return { success: true };
         }
       } else {
-        const localCart = { ...cart };
-        localCart.items = localCart.items.filter((item) => item.id !== itemId);
+        const localCart = {
+          ...cart,
+          items: cart.items ? cart.items.filter((item) => item.id !== itemId) : [],
+        };
 
         // Recalculate subtotal
         localCart.subtotal = localCart.items.reduce(
@@ -198,9 +230,9 @@ export const CartProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated, cart]);
 
-  const clearCart = async () => {
+  const clearCart = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -217,9 +249,9 @@ export const CartProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
-  const value = {
+  const value = useMemo(() => ({
     cart,
     cartCount,
     loading,
@@ -228,7 +260,7 @@ export const CartProvider = ({ children }) => {
     removeFromCart,
     clearCart,
     fetchCart,
-  };
+  }), [cart, cartCount, loading, addToCart, updateCartItem, removeFromCart, clearCart, fetchCart]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

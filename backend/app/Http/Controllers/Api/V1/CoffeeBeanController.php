@@ -22,12 +22,27 @@ class CoffeeBeanController extends BaseController
         }
 
         // Filter by origin country
-        if ($request->has('origin_country')) {
+        if ($request->has('origin_country') && $request->input('origin_country')) {
             $query->where('origin_country', $request->input('origin_country'));
         }
 
+        // Filter by stock status
+        if ($request->has('stock_status')) {
+            switch ($request->input('stock_status')) {
+                case 'out_of_stock':
+                    $query->where('stock_quantity', 0);
+                    break;
+                case 'low_stock':
+                    $query->where('stock_quantity', '>', 0)->where('stock_quantity', '<', 10);
+                    break;
+                case 'in_stock':
+                    $query->where('stock_quantity', '>=', 10);
+                    break;
+            }
+        }
+
         // Search
-        if ($request->has('search')) {
+        if ($request->has('search') && $request->input('search')) {
             $search = $request->input('search');
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -143,7 +158,7 @@ class CoffeeBeanController extends BaseController
             return $this->sendValidationError($validator->errors()->toArray());
         }
 
-        $data = $request->except('image');
+        $data = $request->except(['image', '_method']);
         
         // Handle file upload
         if ($request->hasFile('image')) {

@@ -18,6 +18,7 @@ const ProductRecommendations = ({ currentProductId, limit = 3 }) => {
     } else {
       fetchRelatedProducts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, currentProductId]);
 
   const fetchPersonalizedRecommendations = async () => {
@@ -121,23 +122,23 @@ const ProductRecommendations = ({ currentProductId, limit = 3 }) => {
                 variant="top"
                 src={recommendation.product.image_url ? 
                   `${BACKEND_BASE_URL}${recommendation.product.image_url}` : 
-                  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDI1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNTAiIGhlaWdodD0iMTUwIiBmaWxsPSIjZGRkIi8+Cjx0ZXh0IHg9IjEyNSIgeT0iNzUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuMzVlbSIgZmlsbD0iIzk5OSI+UHJvZHVjdDwvdGV4dD4KPHN2Zz4='}
+                  '/assets/images/product-placeholder.png'}
+                alt={recommendation.product.name}
                 className="product-image"
                 style={{ height: '150px', objectFit: 'cover' }}
+                onError={(e) => { e.target.src = '/assets/images/product-placeholder.png'; }}
               />
               <Card.Body className="d-flex flex-column p-3">
                 <Card.Title className="h6 mb-1">{recommendation.product.name}</Card.Title>
                 <Card.Text className="text-muted small mb-2 flex-grow-1">
-                  {recommendation.product.description?.substring(0, 50)}...
+                  {recommendation.product.description
+                    ? recommendation.product.description.length > 60
+                      ? recommendation.product.description.substring(0, 60) + '…'
+                      : recommendation.product.description
+                    : ''}
                 </Card.Text>
-                {recommendation.reason && (
-                  <small className="text-primary mb-2">
-                    <FaLightbulb className="me-1" size={10} />
-                    {recommendation.reason}
-                  </small>
-                )}
                 <div className="d-flex justify-content-between align-items-center mt-auto">
-                  <span className="fw-bold text-primary">₱{recommendation.product.price}</span>
+                  <span className="fw-bold text-primary">₱{parseFloat(recommendation.product.price).toFixed(2)}</span>
                   <Button
                     as={Link}
                     to={`/products/${recommendation.product.id}`}

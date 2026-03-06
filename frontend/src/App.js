@@ -1,281 +1,262 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
+import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './context/AuthContext';
+import { KITCHEN_THEME } from './constants/workforceThemes';
+import { KITCHEN_INVENTORY_TYPES } from './components/workforce/EmployeeInventory';
+import apiService from './services/api.service';
+import { API_ENDPOINTS } from './config/api';
 import { CartProvider } from './context/CartContext';
+import { NotificationCenterProvider } from './context/NotificationContext';
 import { NotificationProvider } from './components/common/NotificationSystem';
+import { ToastProvider } from './components/animations/Toast';
+
+// Styles loaded in index.js (bootstrap -> variables -> overrides -> utilities)
 
 // Layout Components
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
+import PublicLayout from './components/layout/PublicLayout';
+import AuthLayout from './components/layout/AuthLayout';
+import CustomerLayout from './components/layout/CustomerLayout';
+import AdminLayout from './components/layout/AdminLayout';
+import BaristaLayout from './components/layout/BaristaLayout';
+import KitchenLayout from './components/layout/KitchenLayout';
 
-// Public Pages
+// Common Components
+import LoadingFallback from './components/common/LoadingFallback';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import DashboardRedirect from './components/common/DashboardRedirect';
+
+// Public Pages - Eager load for better initial UX
 import HomePage from './pages/public/HomePage';
-import ProductsPage from './pages/public/ProductsPage';
-import ProductDetailPage from './pages/public/ProductDetailPage';
-import AboutPage from './pages/public/AboutPage';
-import ContactPage from './pages/public/ContactPage';
-import AnnouncementsPage from './pages/public/AnnouncementsPage';
-import InquiriesPage from './pages/public/InquiriesPage';
-
-// Auth Pages
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 
-// Customer Pages
-import CustomerDashboard from './pages/customer/CustomerDashboard';
-import CustomerProfile from './pages/customer/CustomerProfile';
-import OrderHistory from './pages/customer/OrderHistory';
-import OrderDetailPage from './pages/customer/OrderDetailPage';
-import CartPage from './pages/customer/CartPage';
-import CheckoutPage from './pages/customer/CheckoutPage';
-import CustomerInsightsPage from './pages/customer/CustomerInsightsPage';
+// Auth Pages - Lazy loaded (accessed infrequently after first visit)
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 
-// Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminAnalytics from './pages/admin/AdminAnalytics';
-import AdminInventory from './pages/admin/AdminInventory';
-import AdminReports from './pages/admin/AdminReports';
-import AdminCoffeeBeans from './pages/admin/AdminCoffeeBeans';
+// Lazy Load Public Pages
+const ProductsPage = lazy(() => import('./pages/public/ProductsPage'));
+const ProductDetailPage = lazy(() => import('./pages/public/ProductDetailPage'));
+const AboutPage = lazy(() => import('./pages/public/AboutPage'));
+const ContactPage = lazy(() => import('./pages/public/ContactPage'));
+const AnnouncementsPage = lazy(() => import('./pages/public/AnnouncementsPage'));
+const AnnouncementDetailPage = lazy(() => import('./pages/public/AnnouncementDetailPage'));
+const InquiriesPage = lazy(() => import('./pages/public/InquiriesPage'));
+const PrivacyPage = lazy(() => import('./pages/public/PrivacyPage'));
+const TermsPage = lazy(() => import('./pages/public/TermsPage'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
-// Barista Pages
-import BaristaDashboard from './pages/barista/BaristaDashboard';
-import OrderQueue from './pages/barista/OrderQueue';
-import CoffeeBeanControl from './pages/barista/CoffeeBeanControl';
-import TrainingInsights from './pages/barista/TrainingInsights';
-import CompletedOrders from './pages/barista/CompletedOrders';
-import TodaysOriginManagement from './pages/barista/TodaysOriginManagement';
-import InventoryChecklist from './pages/barista/InventoryChecklist';
+// Create a client for React Query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-// Protected Route Component
-import ProtectedRoute from './components/common/ProtectedRoute';
+// Lazy Load Customer Pages
+const CustomerDashboard = lazy(() => import('./pages/customer/CustomerDashboard'));
+const CustomerProfile = lazy(() => import('./pages/customer/CustomerProfile'));
+const OrderHistory = lazy(() => import('./pages/customer/OrderHistory'));
+const OrderDetailPage = lazy(() => import('./pages/customer/OrderDetailPage'));
+const CartPage = lazy(() => import('./pages/customer/CartPage'));
+const CheckoutPage = lazy(() => import('./pages/customer/CheckoutPage'));
+const CustomerInsightsPage = lazy(() => import('./pages/customer/CustomerInsightsPage'));
 
-// Import Styles
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './styles/theme.css';
-import './App.css';
+// Lazy Load Admin Pages
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
+const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
+const AdminInventory = lazy(() => import('./pages/admin/AdminInventory'));
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
+const AdminCoffeeBeans = lazy(() => import('./pages/admin/AdminCoffeeBeans'));
+const AdminEmployees = lazy(() => import('./pages/admin/AdminEmployees'));
+const AdminAttendance = lazy(() => import('./pages/admin/AdminAttendance'));
+const AdminTasks = lazy(() => import('./pages/admin/AdminTasks'));
+const AdminShifts = lazy(() => import('./pages/admin/AdminShifts'));
+const AdminLeaveRequests = lazy(() => import('./pages/admin/AdminLeaveRequests'));
+const AdminPerformance = lazy(() => import('./pages/admin/AdminPerformance'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
+
+// Lazy Load Barista Pages
+const BaristaDashboard = lazy(() => import('./pages/barista/BaristaDashboard'));
+const OrderQueue = lazy(() => import('./pages/barista/OrderQueue'));
+const CoffeeBeanControl = lazy(() => import('./pages/barista/CoffeeBeanControl'));
+const TrainingInsights = lazy(() => import('./pages/barista/TrainingInsights'));
+const CompletedOrders = lazy(() => import('./pages/barista/CompletedOrders'));
+const TodaysOriginManagement = lazy(() => import('./pages/barista/TodaysOriginManagement'));
+const InventoryChecklist = lazy(() => import('./components/workforce/EmployeeInventory'));
+
+// Lazy Load Barista Workforce Pages
+const BaristaAttendance = lazy(() => import('./components/workforce/EmployeeAttendance'));
+const MyTasks = lazy(() => import('./components/workforce/EmployeeMyTasks'));
+const MyShifts = lazy(() => import('./components/workforce/EmployeeMyShifts'));
+const LeaveRequest = lazy(() => import('./components/workforce/EmployeeLeaveRequest'));
+const MyPerformance = lazy(() => import('./components/workforce/EmployeeMyPerformance'));
+
+// Lazy Load Barista POS (full-screen, no sidebar)
+const PosPage = lazy(() => import('./pages/barista/PosPage'));
+
+// Lazy Load Kitchen Staff Pages
+const KitchenDashboard = lazy(() => import('./pages/kitchen/KitchenDashboard'));
+const FoodOrderQueue = lazy(() => import('./pages/kitchen/FoodOrderQueue'));
+const CompletedFoodOrders = lazy(() => import('./pages/kitchen/CompletedFoodOrders'));
+const KitchenInventory = lazy(() => import('./components/workforce/EmployeeInventory'));
+
+// Lazy Load Kitchen Workforce Pages
+const KitchenAttendance = lazy(() => import('./components/workforce/EmployeeAttendance'));
+const KitchenMyTasks = lazy(() => import('./components/workforce/EmployeeMyTasks'));
+const KitchenMyShifts = lazy(() => import('./components/workforce/EmployeeMyShifts'));
+const KitchenLeaveRequest = lazy(() => import('./components/workforce/EmployeeLeaveRequest'));
+const KitchenMyPerformance = lazy(() => import('./components/workforce/EmployeeMyPerformance'));
+
+// Kitchen inventory config for inline route props
+const kitchenEndpoints = {
+  inventory: () => apiService.get(API_ENDPOINTS.KITCHEN.INVENTORY, { params: { per_page: 200 } }),
+  adjust: (itemId, payload) => apiService.post(API_ENDPOINTS.KITCHEN.INVENTORY_ADJUST(itemId), payload),
+};
+const kitchenBuildPayload = (_item, newQty) => ({ quantity: newQty, reason: 'Kitchen checklist adjustment' });
+
+// Lazy Load Notification Pages
+const NotificationCenter = lazy(() => import('./pages/notifications/NotificationCenter'));
+const NotificationPreferences = lazy(() => import('./pages/notifications/NotificationPreferences'));
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <CartProvider>
-          <NotificationProvider>
-            <div className="App d-flex flex-column min-vh-100">
-            <Navbar />
-            <main className="flex-grow-1">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<HomePage />} />
-                <Route path="/products" element={<ProductsPage />} />
-                <Route path="/products/:id" element={<ProductDetailPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/announcements" element={<AnnouncementsPage />} />
-                <Route path="/inquiries" element={<InquiriesPage />} />
-
-                {/* Auth Routes */}
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-
-                {/* Customer Routes - Protected */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <CustomerDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/insights"
-                  element={
-                    <ProtectedRoute>
-                      <CustomerInsightsPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <CustomerProfile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/orders"
-                  element={
-                    <ProtectedRoute>
-                      <OrderHistory />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/orders/:id"
-                  element={
-                    <ProtectedRoute>
-                      <OrderDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/cart" element={<CartPage />} />
-                <Route
-                  path="/checkout"
-                  element={
-                    <ProtectedRoute>
-                      <CheckoutPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Admin Routes - Protected */}
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute role="admin">
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/products"
-                  element={
-                    <ProtectedRoute role="admin">
-                      <AdminProducts />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/orders"
-                  element={
-                    <ProtectedRoute role="admin">
-                      <AdminOrders />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/users"
-                  element={
-                    <ProtectedRoute role="admin">
-                      <AdminUsers />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/analytics"
-                  element={
-                    <ProtectedRoute role="admin">
-                      <AdminAnalytics />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/inventory"
-                  element={
-                    <ProtectedRoute role="admin">
-                      <AdminInventory />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/reports"
-                  element={
-                    <ProtectedRoute role="admin">
-                      <AdminReports />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/coffee-beans"
-                  element={
-                    <ProtectedRoute role="admin">
-                      <AdminCoffeeBeans />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Barista Routes - Protected */}
-                <Route
-                  path="/barista/dashboard"
-                  element={
-                    <ProtectedRoute role="barista">
-                      <BaristaDashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/barista/orders"
-                  element={
-                    <ProtectedRoute role="barista">
-                      <OrderQueue />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/barista/beans"
-                  element={
-                    <ProtectedRoute role="barista">
-                      <CoffeeBeanControl />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/barista/training"
-                  element={
-                    <ProtectedRoute role="barista">
-                      <TrainingInsights />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/barista/completed"
-                  element={
-                    <ProtectedRoute role="barista">
-                      <CompletedOrders />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/barista/featured-origins"
-                  element={
-                    <ProtectedRoute role="barista">
-                      <TodaysOriginManagement />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/barista/inventory"
-                  element={
-                    <ProtectedRoute role="barista">
-                      <InventoryChecklist />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-        </NotificationProvider>
-      </CartProvider>
-    </AuthProvider>
-    </Router>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <AuthProvider>
+            <CartProvider>
+              <NotificationCenterProvider>
+                <ToastProvider>
+                  <NotificationProvider>
+                    <ErrorBoundary>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <AnimatedRoutes />
+                      </Suspense>
+                    </ErrorBoundary>
+                  </NotificationProvider>
+                </ToastProvider>
+              </NotificationCenterProvider>
+            </CartProvider>
+          </AuthProvider>
+        </Router>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 
-// Simple 404 Page Component
-const NotFoundPage = () => (
-  <div className="container py-5 text-center">
-    <h1 className="display-1">404</h1>
-    <h2>Page Not Found</h2>
-    <p className="lead">The page you're looking for doesn't exist.</p>
-    <a href="/" className="btn btn-primary">
-      Go Home
-    </a>
-  </div>
-);
+function AnimatedRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+
+        {/* Auth Routes: Full-screen, no Navbar/Footer */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+        </Route>
+
+        {/* Public Routes: Navbar + Footer + BottomNav */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/products/:id" element={<ProductDetailPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/announcements" element={<AnnouncementsPage />} />
+          <Route path="/announcements/:id" element={<AnnouncementDetailPage />} />
+          <Route path="/inquiries" element={<InquiriesPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+        </Route>
+
+        {/* Customer Routes: Navbar + Footer, auth required */}
+        <Route element={<CustomerLayout />}>
+          <Route path="/dashboard" element={<DashboardRedirect />} />
+          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+          <Route path="/profile" element={<CustomerProfile />} />
+          <Route path="/orders" element={<OrderHistory />} />
+          <Route path="/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/insights" element={<CustomerInsightsPage />} />
+          <Route path="/notifications" element={<NotificationCenter />} />
+          <Route path="/notifications/settings" element={<NotificationPreferences />} />
+        </Route>
+
+        {/* Admin Routes: Sidebar, admin role required */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="inventory" element={<AdminInventory />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="coffee-beans" element={<AdminCoffeeBeans />} />
+          <Route path="employees" element={<AdminEmployees />} />
+          <Route path="attendance" element={<AdminAttendance />} />
+          <Route path="tasks" element={<AdminTasks />} />
+          <Route path="shifts" element={<AdminShifts />} />
+          <Route path="leave-requests" element={<AdminLeaveRequests />} />
+          <Route path="performance" element={<AdminPerformance />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
+
+        {/* Barista Routes: Sidebar, barista role required */}
+        <Route path="/barista" element={<BaristaLayout />}>
+          <Route index element={<BaristaDashboard />} />
+          <Route path="dashboard" element={<BaristaDashboard />} />
+          <Route path="orders" element={<OrderQueue />} />
+          <Route path="beans" element={<CoffeeBeanControl />} />
+          <Route path="training" element={<TrainingInsights />} />
+          <Route path="completed" element={<CompletedOrders />} />
+          <Route path="featured-origins" element={<TodaysOriginManagement />} />
+          <Route path="inventory" element={<InventoryChecklist defaultTab="bar" title="Inventory Checklist" subtitle="Monitor and update bar stock levels" />} />
+          <Route path="attendance" element={<BaristaAttendance />} />
+          <Route path="tasks" element={<MyTasks />} />
+          <Route path="shifts" element={<MyShifts />} />
+          <Route path="leave-request" element={<LeaveRequest />} />
+          <Route path="performance" element={<MyPerformance />} />
+        </Route>
+
+        {/* Barista POS: Full-screen, no sidebar */}
+        <Route path="/barista/pos" element={<PosPage />} />
+
+        {/* Kitchen Staff Routes: Sidebar, kitchen-staff role required */}
+        <Route path="/kitchen" element={<KitchenLayout />}>
+          <Route index element={<KitchenDashboard />} />
+          <Route path="dashboard" element={<KitchenDashboard />} />
+          <Route path="orders" element={<FoodOrderQueue />} />
+          <Route path="completed" element={<CompletedFoodOrders />} />
+          <Route path="inventory" element={<KitchenInventory theme={KITCHEN_THEME} inventoryTypes={KITCHEN_INVENTORY_TYPES} defaultTab="kitchen" title="Kitchen Inventory" subtitle="Check and adjust kitchen stock levels" endpoints={kitchenEndpoints} buildAdjustPayload={kitchenBuildPayload} />} />
+          <Route path="attendance" element={<KitchenAttendance theme={KITCHEN_THEME} />} />
+          <Route path="tasks" element={<KitchenMyTasks theme={KITCHEN_THEME} />} />
+          <Route path="shifts" element={<KitchenMyShifts theme={KITCHEN_THEME} />} />
+          <Route path="leave-request" element={<KitchenLeaveRequest theme={KITCHEN_THEME} />} />
+          <Route path="performance" element={<KitchenMyPerformance theme={KITCHEN_THEME} liveEndpoint={API_ENDPOINTS.KITCHEN.PERFORMANCE} />} />
+        </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
 
 export default App;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\InventoryItem;
 use App\Models\InventoryLog;
+use App\Events\LowStockAlert;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,18 +22,34 @@ class InventoryController extends BaseController
         try {
             $query = InventoryItem::query();
 
+            // Search by name
+            $search = $request->input('search');
+            if ($search) {
+                $query->where('name', 'like', "%{$search}%");
+            }
+
             // Filter by type
             $type = $request->input('type');
-            if ($type !== null) {
+            if ($type && $type !== 'all') {
                 $query->where('type', $type);
             }
 
-            // Filter by low stock
+            // Filter by stock status
+            $status = $request->input('status');
+            if ($status === 'low_stock') {
+                $query->whereRaw('quantity <= reorder_level')->where('quantity', '>', 0);
+            } elseif ($status === 'out_of_stock') {
+                $query->where('quantity', '<=', 0);
+            } elseif ($status === 'in_stock') {
+                $query->whereRaw('quantity > reorder_level');
+            }
+
+            // Filter by low stock (legacy param)
             if ($request->boolean('low_stock')) {
                 $query->whereRaw('quantity <= reorder_level');
             }
 
-            $items = $query->orderBy('name', 'asc')->paginate(50);
+            $items = $query->orderBy('name', 'asc')->paginate($request->get('per_page', 50));
 
             return $this->sendResponse($items, 'Inventory items retrieved successfully');
         } catch (\Exception $e) {
@@ -70,7 +87,9 @@ class InventoryController extends BaseController
         try {
             $request->validate([
                 'name' => 'required|string|max:255',
-                'type' => 'required|in:beans,syrup,milk,supplies,other',
+                'category' => 'nullable|string|max:100',
+                'source' => 'nullable|in:Wet Market,Online',
+                'type' => 'required|in:bar,kitchen,baking,deli,packaging,cleaning,stationery',
                 'quantity' => 'required|numeric|min:0',
                 'unit' => 'required|string|max:50',
                 'reorder_level' => 'required|numeric|min:0',
@@ -109,13 +128,16 @@ class InventoryController extends BaseController
         try {
             $request->validate([
                 'name' => 'string|max:255',
-                'type' => 'in:beans,syrup,milk,supplies,other',
+                'category' => 'nullable|string|max:100',
+                'source' => 'nullable|in:Wet Market,Online',
+                'type' => 'in:bar,kitchen,baking,deli,packaging,cleaning,stationery',
+                'unit' => 'string|max:50',
                 'reorder_level' => 'numeric|min:0',
                 'cost_per_unit' => 'nullable|numeric|min:0',
             ]);
 
             $item = InventoryItem::findOrFail($id);
-            $item->update($request->except(['quantity', 'unit'])); // Quantity changes through logs only
+            $item->update($request->except(['quantity'])); // Quantity changes through adjustStock only
 
             return $this->sendResponse($item, 'Inventory item updated successfully');
 
@@ -193,6 +215,11 @@ class InventoryController extends BaseController
             ]);
 
             DB::commit();
+
+            // Dispatch low stock alert if quantity dropped to/below reorder level
+            if ($newQuantity <= $item->reorder_level && $oldQuantity > $item->reorder_level) {
+                event(new LowStockAlert($item));
+            }
 
             $item->load(['logs' => function($query) {
                 $query->orderBy('created_at', 'desc')->limit(10);

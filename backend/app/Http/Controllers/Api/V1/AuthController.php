@@ -34,11 +34,7 @@ class AuthController extends BaseController
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
+            return $this->sendValidationError($validator->errors()->toArray());
         }
 
         $user = User::create([
@@ -52,20 +48,16 @@ class AuthController extends BaseController
 
         $token = $user->createToken('auth_token', ['*'], now()->addDays(7))->plainTextToken;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User registered successfully',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => 'customer'
-                ],
-                'token' => $token,
-                'expires_in' => '7 days'
-            ]
-        ], 201);
+        return $this->sendResponse([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => 'customer'
+            ],
+            'token' => $token,
+            'expires_in' => '7 days'
+        ], 'User registered successfully', 201);
     }
 
     /**
@@ -79,11 +71,7 @@ class AuthController extends BaseController
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
+            return $this->sendValidationError($validator->errors()->toArray());
         }
 
         $email = $request->input('email');
@@ -92,16 +80,15 @@ class AuthController extends BaseController
         $user = User::where('email', $email)->first();
 
         if (!$user || !Hash::check($password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid credentials'
-            ], 401);
+            return $this->sendError('Invalid credentials', 401);
         }
 
         // Revoke old tokens for security (optional - keep only latest session)
         // $user->tokens()->delete();
 
-        $token = $user->createToken('auth_token', ['*'], now()->addDays(7))->plainTextToken;
+        $rememberMe = $request->boolean('rememberMe');
+        $expiresAt = $rememberMe ? now()->addDays(30) : now()->addDays(7);
+        $token = $user->createToken('auth_token', ['*'], $expiresAt)->plainTextToken;
 
         // Get user roles
         $roles = $user->getRoleNames();
@@ -114,21 +101,17 @@ class AuthController extends BaseController
 
         $primaryRole = $roles->first() ?? 'customer';
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $primaryRole, // Primary role (singular)
-                    'roles' => $roles // All roles (array)
-                ],
-                'token' => $token,
-                'expires_in' => '7 days'
-            ]
-        ], 200);
+        return $this->sendResponse([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $primaryRole,
+                'roles' => $roles
+            ],
+            'token' => $token,
+            'expires_in' => $rememberMe ? '30 days' : '7 days'
+        ], 'Login successful');
     }
 
     /**
@@ -138,10 +121,7 @@ class AuthController extends BaseController
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Logged out successfully'
-        ], 200);
+        return $this->sendResponse(null, 'Logged out successfully');
     }
 
     /**
@@ -153,19 +133,16 @@ class AuthController extends BaseController
         $roles = $user->getRoleNames();
         $primaryRole = $roles->first() ?? 'customer';
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $primaryRole, // Primary role (singular)
-                    'roles' => $roles, // All roles (array)
-                    'permissions' => $user->getAllPermissions()->pluck('name')
-                ]
+        return $this->sendResponse([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $primaryRole,
+                'roles' => $roles,
+                'permissions' => $user->getAllPermissions()->pluck('name')
             ]
-        ], 200);
+        ]);
     }
 
     /**
@@ -176,19 +153,15 @@ class AuthController extends BaseController
         $user = $request->user();
 
         // Delete current token
-        $request->user()->currentAccessToken()->delete();
+        $user->currentAccessToken()->delete();
 
         // Create new token with 7-day expiration
         $token = $user->createToken('auth_token', ['*'], now()->addDays(7))->plainTextToken;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Token refreshed successfully',
-            'data' => [
-                'token' => $token,
-                'expires_in' => '7 days'
-            ]
-        ], 200);
+        return $this->sendResponse([
+            'token' => $token,
+            'expires_in' => '7 days'
+        ], 'Token refreshed successfully');
     }
 
     /**
@@ -197,32 +170,17 @@ class AuthController extends BaseController
     public function forgotPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|email',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
+            return $this->sendError('Please enter a valid email address', 422, $validator->errors()->toArray());
         }
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        // Always return success to prevent email enumeration
+        Password::sendResetLink($request->only('email'));
 
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Password reset link sent to your email'
-            ], 200);
-        }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Unable to send reset link. Please try again.'
-        ], 500);
+        return $this->sendResponse(null, 'If an account with that email exists, a password reset link has been sent.');
     }
 
     /**
@@ -245,11 +203,7 @@ class AuthController extends BaseController
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
+            return $this->sendValidationError($validator->errors()->toArray());
         }
 
         $status = Password::reset(
@@ -269,15 +223,9 @@ class AuthController extends BaseController
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Password reset successfully. Please login with your new password.'
-            ], 200);
+            return $this->sendResponse(null, 'Password reset successfully. Please login with your new password.');
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => __($status)
-        ], 400);
+        return $this->sendError(__($status), 400);
     }
 }
