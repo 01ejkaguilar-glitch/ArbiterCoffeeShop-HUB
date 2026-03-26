@@ -7,6 +7,8 @@ import { API_ENDPOINTS } from '../../config/api';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
+import BottomNavigation from '../../components/mobile/BottomNavigation';
+import PullToRefresh from '../../components/mobile/PullToRefresh';
 import { useCategories } from '../../hooks/useCategories';
 import SEO from '../../components/SEO';
 import { BreadcrumbSchema } from '../../components/StructuredData';
@@ -172,9 +174,15 @@ const ProductsPage = () => {
     ? 'Products'
     : categories.find(c => c.id.toString() === activeCategory)?.name || 'Products';
 
+  // Handler to reload products
+  const reloadProducts = () => {
+    window.location.reload(); // Replace with better logic if available
+  };
+
   return (
     <main role="main">
-      <Container className="py-5">
+      <PullToRefresh onRefresh={reloadProducts}>
+        <Container className="py-5">
         <SEO
           title={`${categoryName} - Browse Our Premium Coffee Collection`}
           description={`Explore ${productCount} premium coffee products. Shop specialty coffee, espresso, lattes, merchandise, and more.`}
@@ -295,6 +303,8 @@ const ProductsPage = () => {
           </div>
         </section>
       </Container>
+    </PullToRefresh>
+      <BottomNavigation />
     </main>
   );
 };

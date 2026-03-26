@@ -1,3 +1,5 @@
+import BottomNavigation from '../../components/mobile/BottomNavigation';
+import PullToRefresh from '../../components/mobile/PullToRefresh';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Table, Spinner, Alert, Form, InputGroup, Dropdown, Pagination } from 'react-bootstrap';
 import { FaEye, FaRedo, FaWifi, FaExclamationTriangle, FaSearch, FaFilter, FaDownload, FaRedoAlt, FaCalendarAlt, FaTimes } from 'react-icons/fa';
@@ -279,7 +281,8 @@ Thank you for your business!
 
   return (
     <main role="main">
-    <Container className="py-5">
+      <PullToRefresh onRefresh={handleRefresh}>
+        <Container className="py-5">
       <Row className="mb-4">
         <Col>
           <div className="d-flex justify-content-between align-items-center">
@@ -572,7 +575,9 @@ Thank you for your business!
           )}
         </Col>
       </Row>
-      </Container>
+    </Container>
+  </PullToRefresh>
+      <BottomNavigation />
     </main>
   );
 };

@@ -7,6 +7,7 @@ import {
   FaSeedling, FaHandshake, FaHeart, FaUsers
 } from 'react-icons/fa';
 import HomepageRecommendations from '../../components/public/HomepageRecommendations';
+import BottomNavigation from '../../components/mobile/BottomNavigation';
 import SEO from '../../components/SEO';
 import { OrganizationSchema, WebSiteSchema } from '../../components/StructuredData';
 
@@ -244,6 +245,7 @@ const HomePage = () => {
           </Row>
         </Container>
       </section>
+      <BottomNavigation />
     </main>
   );
 };

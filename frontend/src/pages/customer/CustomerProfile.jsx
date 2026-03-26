@@ -1,3 +1,5 @@
+import BottomNavigation from '../../components/mobile/BottomNavigation';
+import PullToRefresh from '../../components/mobile/PullToRefresh';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Modal, Spinner, Form } from 'react-bootstrap';
 import { Helmet } from 'react-helmet-async';
@@ -322,12 +324,13 @@ const CustomerProfile = () => {
   /* ── Render ────────────────────────────── */
   return (
     <main role="main" className="cpf-page">
+      <PullToRefresh onRefresh={fetchProfile}>
       <Helmet>
         <title>My Profile | Arbiter Coffee</title>
         <meta name="description" content="Manage your Arbiter Coffee profile, preferences, and account settings." />
       </Helmet>
 
-      {/* ── Alerts ─────────────────────── */}
+        {/* ── Alerts ─────────────────────── */}
       <AnimatePresence>
         {success && (
           <motion.div className="cpf-alert cpf-alert-success" {...fadeIn} key="success">
@@ -392,7 +395,7 @@ const CustomerProfile = () => {
         ))}
       </nav>
 
-      {/* ── Tab Content ────────────────── */}
+        {/* ── Tab Content ────────────────── */}
       <AnimatePresence mode="wait">
         {/* ─── Personal Info ──────────── */}
         {activeTab === 'personal' && (
@@ -677,6 +680,8 @@ const CustomerProfile = () => {
           </Modal.Footer>
         </div>
       </Modal>
+      </PullToRefresh>
+      <BottomNavigation />
     </main>
   );
 };

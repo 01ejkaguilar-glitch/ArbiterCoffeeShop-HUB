@@ -8,6 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import LoadingFallback from '../../components/common/LoadingFallback';
 import ProductRecommendations from '../../components/public/ProductRecommendations';
 import { useProduct } from '../../hooks/useProducts';
+import BottomNavigation from '../../components/mobile/BottomNavigation';
+import SwipeableGallery from '../../components/mobile/SwipeableGallery';
 import SEO from '../../components/SEO';
 import { ProductSchema, BreadcrumbSchema } from '../../components/StructuredData';
 import { addToRecentlyViewed, removeFromRecentlyViewed } from '../../components/product/RecentlyViewed';
@@ -125,6 +127,12 @@ const ProductDetailPage = () => {
   return (
     <main role="main">
       <Container className="py-4 py-md-5">
+        {/* SwipeableGallery for product images (mobile) */}
+        {product && product.images && product.images.length > 0 && (
+          <div className="d-md-none mb-3">
+            <SwipeableGallery images={product.images} altPrefix={product.name} />
+          </div>
+        )}
         <SEO
           title={product.name}
           description={product.description || `${product.name} - Premium product from Arbiter Coffee Hub.`}
@@ -253,6 +261,7 @@ const ProductDetailPage = () => {
 
 
       </Container>
+      <BottomNavigation />
     </main>
   );
 };

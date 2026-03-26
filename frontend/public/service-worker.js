@@ -1,3 +1,16 @@
+// Notify clients when a new service worker is waiting
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('controllerchange', () => {
+  // Notify all clients about the update
+  self.clients.matchAll({ type: 'window' }).then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({ type: 'NEW_VERSION_AVAILABLE' });
+    });
+  });
+});
 /**
  * Arbiter Coffee Hub - Service Worker
  * 
