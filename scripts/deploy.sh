@@ -1,37 +1,68 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Deploy script (assumes CI uploads frontend build to /var/www/arbiter/frontend_build)
-APP_DIR=/var/www/arbiter
+echo "🚀 Starting deployment..."
 
-echo "==> Deploy starting: $(date)"
-cd ${APP_DIR}
+PROJECT_DIR="/var/www/arbiter"
+BACKEND_DIR="$PROJECT_DIR/backend"
+FRONTEND_BUILD_DIR="$PROJECT_DIR/frontend/public"
 
-echo "==> Fetching latest code"
-git fetch --all
-git reset --hard origin/master
+cd "$PROJECT_DIR"
 
-echo "==> Backend: install composer deps and migrate"
-cd ${APP_DIR}/backend
-composer install --no-dev --optimize-autoloader
-php artisan migrate --force
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+echo "📥 Fetching latest code..."
+git fetch origin
 
-echo "==> Frontend: copy built assets (if present)"
-if [ -d "${APP_DIR}/frontend_build" ]; then
-  rm -rf ${APP_DIR}/backend/public/* || true
-  cp -r ${APP_DIR}/frontend_build/* ${APP_DIR}/backend/public/
+# Detect correct branch (main or master)
+BRANCH="main"
+if ! git show-ref --verify --quiet refs/remotes/origin/$BRANCH; then
+  BRANCH="master"
 fi
 
-echo "==> Set permissions"
-chown -R www-data:www-data ${APP_DIR}/backend
+echo "🔀 Using branch: $BRANCH"
+git reset --hard origin/$BRANCH
 
-echo "==> Restarting workers and reloading Nginx"
-supervisorctl restart laravel-worker || true
-systemctl reload nginx || true
+echo "📦 Installing backend dependencies..."
 
-echo "==> Deploy finished: $(date)"
+cd "$BACKEND_DIR"
 
-exit 0
+# Ensure required PHP extensions exist (prevents Composer crash)
+REQUIRED_EXT=("curl" "dom" "mbstring" "xml")
+for ext in "${REQUIRED_EXT[@]}"; do
+  if ! php -m | grep -q "$ext"; then
+    echo "❌ Missing PHP extension: $ext"
+    exit 1
+  fi
+done
+
+# Clean broken installs safely
+if [ -d "vendor" ]; then
+  echo "🧹 Cleaning old vendor..."
+  rm -rf vendor
+fi
+
+composer install --no-dev --optimize-autoloader
+
+echo "⚙️ Running Laravel optimizations..."
+
+php artisan config:clear || true
+php artisan cache:clear || true
+php artisan route:clear || true
+
+php artisan config:cache
+php artisan route:cache
+
+echo "🗄️ Running migrations..."
+php artisan migrate --force
+
+echo "🔐 Fixing permissions..."
+
+sudo chown -R www-data:www-data "$PROJECT_DIR"
+sudo chmod -R 755 "$PROJECT_DIR"
+sudo chmod -R 775 "$BACKEND_DIR/storage" "$BACKEND_DIR/bootstrap/cache"
+
+echo "🌐 Reloading services..."
+
+sudo systemctl restart php8.4-fpm
+sudo systemctl restart nginx
+
+echo "✅ Deployment successful!"
