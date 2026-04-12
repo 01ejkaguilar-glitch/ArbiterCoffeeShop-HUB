@@ -1,12 +1,12 @@
 # Environment files
-.env
-.env.local
+backend/.env
+backend/.env.local
 .env.*.local
 
 # IDE
 .idea/
 .vscode/
-vendor/
+backend/vendor
 *.swp
 *.swo
 *~
