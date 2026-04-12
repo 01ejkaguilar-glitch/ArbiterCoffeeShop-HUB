@@ -10,7 +10,7 @@ return new class extends Migration
     {
         // Cart items: queried by cart_id and product_id
         Schema::table('cart_items', function (Blueprint $table) {
-            $table->index('cart_id');
+//         $table->index('cart_id');
             $table->index('product_id');
         });
 
