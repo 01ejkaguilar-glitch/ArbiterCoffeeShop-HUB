@@ -1,6 +1,6 @@
-/vendor/
-/node_modules/
-/.env
+vendor/
+node_modules/
+.env
 /.env.backup
 /.env.production
 /storage/*.key
@@ -28,7 +28,7 @@
 Thumbs.db
 
 # Build artifacts
-/public/build/
+public/build/
 
 # Node (shouldn't be here in a PHP project)
 package-lock.json
