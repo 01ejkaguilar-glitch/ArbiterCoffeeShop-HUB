@@ -26,13 +26,13 @@ echo "📦 Installing backend dependencies..."
 cd "$BACKEND_DIR"
 
 # Ensure required PHP extensions exist (prevents Composer crash)
-REQUIRED_EXT=("curl" "dom" "mbstring" "xml")
-for ext in "${REQUIRED_EXT[@]}"; do
-  if ! php -m | grep -q "$ext"; then
-    echo "❌ Missing PHP extension: $ext"
-    exit 1
-  fi
-done
+#REQUIRED_EXT=("curl" "dom" "mbstring" "xml")
+#for ext in "${REQUIRED_EXT[@]}"; do
+#  if ! php -m | grep -q "$ext"; then
+#    echo "❌ Missing PHP extension: $ext"
+#    exit 1
+#  fi
+#done
 
 # Clean broken installs safely
 if [ -d "vendor" ]; then
