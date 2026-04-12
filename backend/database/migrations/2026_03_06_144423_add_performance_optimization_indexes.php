@@ -52,7 +52,7 @@ return new class extends Migration
 //            $table->index('employee_id');
 //            $table->index('status');
 //        });
-//    }
+    }
 
     public function down(): void
     {
