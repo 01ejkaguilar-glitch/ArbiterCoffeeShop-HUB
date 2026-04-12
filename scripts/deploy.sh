@@ -9,7 +9,7 @@ cd ${APP_DIR}
 
 echo "==> Fetching latest code"
 git fetch --all
-git reset --hard origin/main
+git reset --hard origin/master
 
 echo "==> Backend: install composer deps and migrate"
 cd ${APP_DIR}/backend
