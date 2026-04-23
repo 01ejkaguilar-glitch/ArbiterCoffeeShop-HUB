@@ -1,0 +1,46 @@
+# Arbiter Coffee Shop - Robots.txt
+# This file tells search engines which pages to crawl and which to avoid
+
+User-agent: *
+Allow: /
+
+# Disallow admin, barista, and customer dashboard areas
+Disallow: /admin
+Disallow: /barista
+Disallow: /customer
+
+# Disallow API endpoints (already handled by CORS, but explicit here)
+Disallow: /api/
+
+# Allow search engines to crawl public pages
+Allow: /products
+Allow: /about
+Allow: /contact
+Allow: /announcements
+Allow: /inquiries
+
+# Sitemap location
+Sitemap: http://localhost:8000/sitemap.xml
+
+# Crawl-delay for polite crawling (optional)
+# Crawl-delay: 1
+
+# Specific rules for common bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+# Block AI scrapers (optional - uncomment if needed)
+# User-agent: GPTBot
+# Disallow: /
+# 
+# User-agent: ChatGPT-User
+# Disallow: /
+# 
+# User-agent: CCBot
+# Disallow: /
