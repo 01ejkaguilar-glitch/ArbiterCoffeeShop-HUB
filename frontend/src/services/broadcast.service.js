@@ -10,12 +10,18 @@ import API_BASE_URL from '../config/api';
 
 const REALTIME_ENABLED = process.env.REACT_APP_ENABLE_NOTIFICATIONS === 'true';
 
+const runtimeHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+const isLocalRuntimeHost = runtimeHost === 'localhost' || runtimeHost === '127.0.0.1';
+const defaultReverbHost = isLocalRuntimeHost ? 'localhost' : 'api.arbitercoffee.shop';
+const defaultReverbScheme = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'https' : 'http';
+const defaultReverbPort = defaultReverbScheme === 'https' ? 443 : 80;
+
 // Reverb connection config (read from env, falls back to localhost defaults)
 const REVERB_CONFIG = {
   key:    process.env.REACT_APP_REVERB_APP_KEY  || 'local',
-  host:   process.env.REACT_APP_REVERB_HOST     || 'localhost',
-  port:   parseInt(process.env.REACT_APP_REVERB_PORT  || '8080', 10),
-  scheme: process.env.REACT_APP_REVERB_SCHEME   || 'http',
+  host:   process.env.REACT_APP_REVERB_HOST     || defaultReverbHost,
+  port:   parseInt(process.env.REACT_APP_REVERB_PORT  || String(defaultReverbPort), 10),
+  scheme: process.env.REACT_APP_REVERB_SCHEME   || defaultReverbScheme,
 };
 
 class BroadcastService {
