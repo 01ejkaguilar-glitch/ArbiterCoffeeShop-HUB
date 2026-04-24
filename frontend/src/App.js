@@ -1,6 +1,6 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './context/AuthContext';
@@ -56,7 +56,10 @@ const queryClient = new QueryClient({
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
       retry: 1,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      refetchInterval: 90 * 1000,
+      refetchIntervalInBackground: false,
     },
   },
 });
@@ -158,10 +161,33 @@ function App() {
 
 function AnimatedRoutes() {
   const location = useLocation();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const handleFocus = () => {
+      queryClient.refetchQueries({ type: 'active' });
+    };
+
+    const handleOnline = () => {
+      queryClient.refetchQueries({ type: 'active' });
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [queryClient]);
+
+  useEffect(() => {
+    queryClient.refetchQueries({ type: 'active' });
+  }, [location.pathname, queryClient]);
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location}>
 
         {/* Auth Routes: Full-screen, no Navbar/Footer */}
         <Route element={<AuthLayout />}>

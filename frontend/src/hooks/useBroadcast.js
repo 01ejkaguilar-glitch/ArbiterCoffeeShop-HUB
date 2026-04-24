@@ -32,20 +32,21 @@ export const useBroadcast = (channelName, eventHandlers = {}, isPrivate = false)
     };
 
     const pusherSocket = getPusherSocket();
-    if (pusherSocket) {
+    const connection = pusherSocket?.connection;
+    if (connection && typeof connection.bind === 'function' && typeof connection.unbind === 'function') {
       // WebSocket mode — track actual connection state
-      setIsConnected(pusherSocket.connection.state === 'connected');
+      setIsConnected(connection.state === 'connected');
 
       const handleConnected    = () => setIsConnected(true);
       const handleDisconnected = () => setIsConnected(false);
-      pusherSocket.connection.bind('connected',    handleConnected);
-      pusherSocket.connection.bind('disconnected', handleDisconnected);
+      connection.bind('connected',    handleConnected);
+      connection.bind('disconnected', handleDisconnected);
 
       return () => {
         try {
           if (channelName && broadcastService.getEcho()) broadcastService.unsubscribe(channelName);
-          pusherSocket.connection.unbind('connected',    handleConnected);
-          pusherSocket.connection.unbind('disconnected', handleDisconnected);
+          connection.unbind('connected',    handleConnected);
+          connection.unbind('disconnected', handleDisconnected);
         } catch (err) {
           console.warn('Error during broadcast cleanup:', err);
         }

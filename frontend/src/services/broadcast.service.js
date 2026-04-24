@@ -28,7 +28,7 @@ class BroadcastService {
   constructor() {
     this.echo = null;
     this.channels = new Map();
-    this.isConnected = false;
+    this.connected = false;
   }
 
   /**
@@ -66,7 +66,7 @@ class BroadcastService {
       });
 
       console.log('Broadcast service initialised with Laravel Reverb (WebSocket)');
-      this.isConnected = true;
+      this.connected = true;
       return this.echo;
     } catch (error) {
       console.error('Failed to initialise Reverb Echo, falling back to polling:', error);
@@ -82,7 +82,7 @@ class BroadcastService {
     if (this.pollingInterval) return; // Already polling
 
     console.log('Starting polling fallback for real-time updates');
-    this.isConnected = true; // Mark as connected since polling is active
+    this.connected = true; // Mark as connected since polling is active
 
     // Poll for updates every 30 seconds
     this.pollingInterval = setInterval(async () => {
@@ -210,7 +210,7 @@ class BroadcastService {
    * Check if connected to real-time service
    */
   isConnected() {
-    return this.isConnected;
+    return this.connected;
   }
 
   /**
@@ -246,7 +246,7 @@ class BroadcastService {
       this.echo = null;
     }
 
-    this.isConnected = false;
+    this.connected = false;
   }
 }
 
