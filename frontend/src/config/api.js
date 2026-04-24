@@ -3,8 +3,15 @@
  * Backend API endpoints configuration
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
-const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+const isLocalRuntime = typeof window !== 'undefined'
+  && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || (isLocalRuntime
+  ? 'http://localhost:8000/api/v1'
+  : 'https://api.arbitercoffee.shop/api/v1');
+const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || (isLocalRuntime
+  ? 'http://localhost:8000'
+  : 'https://api.arbitercoffee.shop');
 
 export default API_BASE_URL;
 export { BACKEND_BASE_URL };
