@@ -1,0 +1,353 @@
+/* =====================================================
+   App Navbar
+   ===================================================== */
+
+.app-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  background: #212529;         /* Bootstrap dark */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+
+.app-navbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1.25rem;
+  height: 60px;
+  max-width: 100%;
+}
+
+/* ── Brand ─────────────────────────────────────────── */
+.app-navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.app-navbar-brand:hover,
+.app-navbar-brand:focus {
+  color: #fff;
+  text-decoration: none;
+}
+
+.app-navbar-brand img {
+  height: 40px;
+  width: auto;
+}
+
+/* ── Desktop links ─────────────────────────────────── */
+.app-navbar-desktop-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 1.5rem;
+}
+
+.app-nav-link {
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: color 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.app-nav-link:visited {
+  color: rgba(255,255,255,0.75);
+}
+
+.app-nav-link:hover,
+.app-nav-link:focus {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  text-decoration: none;
+}
+
+.app-nav-link.active {
+  color: #fff;
+  background: rgba(255,255,255,0.12);
+  font-weight: 500;
+}
+
+.app-nav-link.active:visited {
+  color: #fff;
+}
+
+/* ── Desktop actions ────────────────────────────────── */
+.app-navbar-desktop-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* ── Icon buttons (cart, bell, etc.) ───────────────── */
+.app-nav-icon-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.8);
+  padding: 0.4rem;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: color 0.15s ease, background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-nav-icon-btn:visited {
+  color: rgba(255,255,255,0.8);
+}
+
+.app-nav-icon-btn:hover,
+.app-nav-icon-btn:focus {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  text-decoration: none;
+}
+
+.app-nav-icon-btn-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.app-nav-cart-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* ── Hamburger button (mobile only) ────────────────── */
+.app-navbar-hamburger {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-navbar-hamburger:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+/* ── Mobile actions strip ───────────────────────────── */
+.app-navbar-mobile-actions {
+  display: none;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+/* ── Responsive breakpoint: xl = 1200px ─────────────── */
+@media (max-width: 1199px) {
+  .app-navbar-desktop-links,
+  .app-navbar-desktop-actions {
+    display: none;
+  }
+
+  .app-navbar-mobile-actions {
+    display: flex;
+  }
+}
+
+/* ── Overlay ────────────────────────────────────────── */
+.app-nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 1040;
+  animation: navFadeIn 0.2s ease;
+}
+
+@keyframes navFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Slide-over drawer (from right) ─────────────────── */
+.app-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(340px, 88vw);
+  background: #212529;
+  color: #fff;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.app-nav-drawer.open {
+  transform: translateX(0);
+}
+
+/* Drawer header */
+.app-nav-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+
+.app-nav-drawer-close {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-nav-drawer-close:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+/* Drawer search */
+.app-nav-drawer-search {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+/* Drawer nav links */
+.app-nav-drawer-links {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+.app-nav-drawer-link {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: background 0.15s ease, color 0.15s ease;
+  margin-bottom: 2px;
+}
+
+.app-nav-drawer-link:visited {
+  color: rgba(255,255,255,0.75);
+}
+
+.app-nav-drawer-link:hover,
+.app-nav-drawer-link:focus {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  text-decoration: none;
+}
+
+.app-nav-drawer-link.active {
+  background: rgba(0, 104, 55, 0.35);
+  color: #fff;
+  font-weight: 500;
+}
+
+.app-nav-drawer-link.active:visited {
+  color: #fff;
+}
+
+/* Drawer user section */
+.app-nav-drawer-user {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-nav-drawer-user-name {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.55);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 0.25rem;
+}
+
+.app-nav-drawer-group-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.35);
+  font-weight: 600;
+  padding: 0.6rem 0.75rem 0.25rem;
+}
+
+.app-nav-drawer-logout {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  color: rgba(255, 100, 100, 0.85);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-nav-drawer-logout:hover {
+  background: rgba(255, 80, 80, 0.12);
+  color: #ff6b6b;
+}
+
+/* Drawer auth buttons */
+.app-nav-drawer-auth {
+  padding: 0.5rem 0;
+}
+
+/* Prevent body scroll */
+body.nav-drawer-open {
+  overflow: hidden;
+}
+
+/* Scrollbar inside drawer */
+.app-nav-drawer-user::-webkit-scrollbar { width: 4px; }
+.app-nav-drawer-user::-webkit-scrollbar-track { background: transparent; }
+.app-nav-drawer-user::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }

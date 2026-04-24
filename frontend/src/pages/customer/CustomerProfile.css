@@ -1,0 +1,488 @@
+/* ========================================
+   Customer Profile — cpf- namespace
+   ======================================== */
+
+/* ── Page Layout ────────────────────────── */
+.cpf-page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* ── Profile Header ─────────────────────── */
+.cpf-header {
+  background: linear-gradient(135deg, var(--color-dark-green) 0%, var(--color-button-primary-hover) 100%);
+  border-radius: var(--radius-2xl);
+  padding: 2.5rem 2rem 2rem;
+  color: var(--color-white);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.cpf-header::before {
+  content: '';
+  position: absolute;
+  right: -60px;
+  top: -60px;
+  width: 220px;
+  height: 220px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.cpf-header::after {
+  content: '';
+  position: absolute;
+  left: -40px;
+  bottom: -40px;
+  width: 160px;
+  height: 160px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ── Avatar ──────────────────────────────── */
+.cpf-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+.cpf-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.cpf-avatar-btn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-dark-green);
+  border: 3px solid var(--color-white);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  font-size: 0.875rem;
+}
+.cpf-avatar-btn:hover:not(:disabled) {
+  background: var(--color-button-primary-hover);
+  transform: scale(1.1);
+}
+.cpf-avatar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Header Text ─────────────────────────── */
+.cpf-header-name {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 0.25rem;
+  line-height: var(--line-height-tight);
+}
+.cpf-header-email {
+  font-size: var(--font-size-sm);
+  opacity: 0.8;
+  margin: 0 0 0.75rem;
+}
+.cpf-member-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.025em;
+}
+
+/* ── Tab Navigation ─────────────────────── */
+.cpf-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+.cpf-nav::-webkit-scrollbar {
+  display: none;
+}
+.cpf-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-light);
+  background: var(--color-white);
+  color: var(--color-text-secondary, #6c757d);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cpf-nav-pill:hover {
+  border-color: var(--color-dark-green);
+  color: var(--color-dark-green);
+}
+.cpf-nav-pill.active {
+  background: var(--color-dark-green);
+  color: var(--color-white);
+  border-color: var(--color-dark-green);
+  box-shadow: 0 2px 8px rgba(0, 104, 55, 0.3);
+}
+.cpf-nav-pill svg {
+  font-size: 1rem;
+}
+
+/* ── Section Cards ──────────────────────── */
+.cpf-card {
+  background: var(--color-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+.cpf-card-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-light);
+}
+.cpf-card-title {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary, #1a1a1a);
+  margin: 0 0 0.25rem;
+}
+.cpf-card-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary, #6c757d);
+  margin: 0;
+}
+
+/* ── Form Elements ──────────────────────── */
+.cpf-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+.cpf-form-group {
+  margin-bottom: 1.25rem;
+}
+.cpf-form-group.full-width {
+  grid-column: 1 / -1;
+}
+.cpf-form-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary, #1a1a1a);
+  margin-bottom: 0.5rem;
+}
+.cpf-form-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  color: var(--color-text-primary, #1a1a1a);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: var(--color-white);
+}
+.cpf-form-input:focus {
+  outline: none;
+  border-color: var(--color-dark-green);
+  box-shadow: 0 0 0 3px rgba(0, 104, 55, 0.1);
+}
+.cpf-form-input.readonly {
+  background: #f8f9fa;
+  cursor: not-allowed;
+  color: var(--color-text-secondary, #6c757d);
+}
+textarea.cpf-form-input {
+  resize: vertical;
+  min-height: 80px;
+}
+select.cpf-form-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c757d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+.cpf-form-help {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary, #6c757d);
+  margin-top: 0.35rem;
+}
+
+/* ── Brewing Method Chips ───────────────── */
+.cpf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.cpf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-light);
+  background: var(--color-white);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.cpf-chip:hover {
+  border-color: var(--color-dark-green);
+}
+.cpf-chip input {
+  display: none;
+}
+.cpf-chip:has(input:checked) {
+  background: rgba(0, 104, 55, 0.08);
+  border-color: var(--color-dark-green);
+  color: var(--color-dark-green);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ── Notification Switch Items ──────────── */
+.cpf-switch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.cpf-switch-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.2s;
+}
+.cpf-switch-item:hover {
+  border-color: var(--color-dark-green);
+}
+.cpf-switch-info {
+  flex: 1;
+}
+.cpf-switch-label {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary, #1a1a1a);
+  margin-bottom: 0.25rem;
+}
+.cpf-switch-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary, #6c757d);
+  margin: 0;
+}
+
+/* make bootstrap switch match brand */
+.cpf-switch-item .form-check-input:checked {
+  background-color: var(--color-dark-green);
+  border-color: var(--color-dark-green);
+}
+
+/* ── Buttons ────────────────────────────── */
+.cpf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.75rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cpf-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.cpf-btn-primary {
+  background: var(--color-dark-green);
+  color: var(--color-white);
+}
+.cpf-btn-primary:hover:not(:disabled) {
+  background: var(--color-button-primary-hover);
+  box-shadow: 0 4px 12px rgba(0, 104, 55, 0.3);
+  transform: translateY(-1px);
+}
+.cpf-btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--color-text-primary, #1a1a1a);
+}
+.cpf-btn-outline:hover:not(:disabled) {
+  border-color: var(--color-dark-green);
+  color: var(--color-dark-green);
+}
+.cpf-btn-danger {
+  background: transparent;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+}
+.cpf-btn-danger:hover:not(:disabled) {
+  background: var(--color-danger);
+  color: var(--color-white);
+}
+
+/* ── Danger Zone ────────────────────────── */
+.cpf-danger-zone {
+  border: 1px solid var(--color-danger-bg);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem 2rem;
+  background: var(--color-danger-bg);
+}
+.cpf-danger-title {
+  font-family: var(--font-heading);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-danger);
+  margin: 0 0 0.5rem;
+  font-size: var(--font-size-base);
+}
+.cpf-danger-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary, #6c757d);
+  margin: 0 0 1rem;
+}
+
+/* ── Alerts ─────────────────────────────── */
+.cpf-alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cpf-alert-success {
+  background: rgba(0, 104, 55, 0.08);
+  color: var(--color-dark-green);
+  border: 1px solid rgba(0, 104, 55, 0.2);
+}
+.cpf-alert-error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-border);
+}
+
+/* ── Loading State ──────────────────────── */
+.cpf-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+  color: var(--color-text-secondary, #6c757d);
+}
+
+/* ── Password Grid ──────────────────────── */
+.cpf-password-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Section Spacing ────────────────────── */
+.cpf-section-gap {
+  margin-top: 1.5rem;
+}
+
+/* ── Modal overrides ────────────────────── */
+.cpf-modal .modal-content {
+  border-radius: var(--radius-xl);
+  border: none;
+  box-shadow: var(--shadow-lg);
+}
+.cpf-modal .modal-header {
+  border-bottom: 1px solid var(--border-light);
+  padding: 1.25rem 1.5rem;
+}
+.cpf-modal .modal-body {
+  padding: 1.5rem;
+}
+.cpf-modal .modal-footer {
+  border-top: 1px solid var(--border-light);
+  padding: 1rem 1.5rem;
+  gap: 0.5rem;
+}
+
+/* ── Responsive ─────────────────────────── */
+@media (max-width: 992px) {
+  .cpf-page {
+    padding: 1.5rem 1rem;
+  }
+  .cpf-header {
+    padding: 2rem 1.5rem 1.75rem;
+  }
+  .cpf-password-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .cpf-page {
+    padding: 1rem 0.75rem;
+  }
+  .cpf-header {
+    padding: 2rem 1.25rem 1.5rem;
+  }
+  .cpf-avatar {
+    width: 96px;
+    height: 96px;
+  }
+  .cpf-header-name {
+    font-size: var(--font-size-xl);
+  }
+  .cpf-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .cpf-card {
+    padding: 1.25rem;
+  }
+  .cpf-password-grid {
+    grid-template-columns: 1fr;
+  }
+  .cpf-nav {
+    gap: 0.375rem;
+  }
+  .cpf-nav-pill {
+    padding: 0.5rem 1rem;
+    font-size: var(--font-size-xs);
+  }
+  .cpf-danger-zone {
+    padding: 1.25rem;
+  }
+}

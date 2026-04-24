@@ -1,0 +1,403 @@
+/* ============================================================
+   MyPerformance.css  –  mp-* design system
+   Uniform with MyTasks design language
+   ============================================================ */
+
+/* ── Page shell ─────────────────────────────────────────────── */
+.mp-page {
+  padding: 24px 28px;
+  min-height: 100vh;
+  background: #f5f6fa;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────── */
+.mp-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.mp-topbar-title h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+.mp-topbar-title p {
+  margin: 2px 0 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* ── Period tabs ─────────────────────────────────────────────── */
+.mp-period-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.mp-period-tab {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.mp-period-tab:hover { background: #f3f4f6; }
+.mp-period-tab.active { background: var(--wf-tint, #E8F5E9); border-color: var(--wf-tint-border, #a5d6a7); color: var(--wf-primary, #006837); }
+
+/* ── Toast ───────────────────────────────────────────────────── */
+.mp-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 18px;
+  animation: mp-slide-in 0.25s ease;
+}
+.mp-toast.success { background: #dcfce7; color: #15803d; border: 1.5px solid #bbf7d0; }
+.mp-toast.error   { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fecaca; }
+.mp-toast-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  font-size: 1rem;
+  padding: 0;
+}
+.mp-toast-close:hover { opacity: 1; }
+@keyframes mp-slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Stats row ───────────────────────────────────────────────── */
+.mp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+@media (max-width: 992px) { .mp-stats { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 576px) { .mp-stats { grid-template-columns: repeat(2, 1fr); gap: .6rem; } }
+@media (max-width: 576px) {
+  .mp-stat-card { padding: .65rem .75rem; gap: .6rem; }
+  .mp-stat-icon { width: 32px; height: 32px; font-size: .9rem; border-radius: 8px; }
+  .mp-stat-val { font-size: 1.1rem; }
+  .mp-stat-lbl { font-size: .68rem; }
+  .mp-stat-sub { font-size: .65rem; gap: 4px; }
+}
+
+.mp-stat-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid #f0f0f5;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.mp-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.mp-stat-icon.indigo { background: var(--wf-tint, #E8F5E9); color: var(--wf-primary, #006837); }
+.mp-stat-icon.green  { background: #dcfce7; color: #16a34a; }
+.mp-stat-icon.blue   { background: var(--wf-tint, #E8F5E9); color: var(--wf-primary, #006837); }
+.mp-stat-icon.amber  { background: #fef3c7; color: #b45309; }
+
+.mp-stat-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #1f2937;
+  line-height: 1;
+}
+.mp-stat-lbl {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-top: 3px;
+}
+.mp-stat-sub {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── Live order stats ────────────────────────────────────────── */
+.mp-live-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid #f0f0f5;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.mp-card-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+.mp-live-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+@media (max-width: 576px) { .mp-live-grid { grid-template-columns: 1fr; } }
+
+.mp-live-item {
+  padding: 20px;
+  text-align: center;
+  border-right: 1px solid #f3f4f6;
+}
+.mp-live-item:last-child { border-right: none; }
+.mp-live-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--wf-primary, #006837);
+  line-height: 1;
+}
+.mp-live-lbl {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+}
+
+/* ── Two-column layout ───────────────────────────────────────── */
+.mp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 20px;
+}
+@media (max-width: 768px) { .mp-grid { grid-template-columns: 1fr; } }
+
+/* ── Section cards ───────────────────────────────────────────── */
+.mp-section-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1.5px solid #f0f0f5;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  overflow: hidden;
+}
+
+/* ── Score breakdown ─────────────────────────────────────────── */
+.mp-section-body { padding: 18px; }
+.mp-score-row { margin-bottom: 14px; }
+.mp-score-row:last-child { margin-bottom: 0; }
+.mp-score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.mp-score-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+.mp-score-num {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--wf-primary, #006837);
+}
+.mp-bar-track {
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.mp-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--wf-gradient, linear-gradient(90deg, var(--color-dark-green), #009245));
+  transition: width 0.6s ease;
+}
+.mp-bar-fill.mid  { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
+.mp-bar-fill.low  { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+/* ── Stars ───────────────────────────────────────────────────── */
+.mp-stars { display: flex; gap: 2px; align-items: center; }
+.mp-star  { font-size: 0.85rem; color: #d1d5db; }
+.mp-star.lit  { color: #f59e0b; }
+.mp-star.half { color: #f59e0b; opacity: 0.5; }
+
+/* ── Score badge ─────────────────────────────────────────────── */
+.mp-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.mp-badge.excellent  { background: #dcfce7; color: #15803d; }
+.mp-badge.good       { background: #f0faf4; color: #15803d; }
+.mp-badge.average    { background: #fef3c7; color: #b45309; }
+.mp-badge.below      { background: #fee2e2; color: #b91c1c; }
+.mp-badge.poor       { background: #fecaca; color: #7f1d1d; }
+
+/* ── Review cards ────────────────────────────────────────────── */
+.mp-reviews-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.mp-review-card {
+  border: 1.5px solid #f0f0f5;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.mp-review-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+
+.mp-review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: #fafafa;
+  cursor: pointer;
+  user-select: none;
+  gap: 10px;
+}
+.mp-review-period {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+.mp-review-meta { font-size: 0.73rem; color: #9ca3af; margin-top: 2px; }
+.mp-review-score-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.mp-review-chevron {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  transition: transform 0.25s;
+}
+.mp-review-chevron.open { transform: rotate(180deg); }
+
+.mp-review-body {
+  padding: 14px;
+  border-top: 1px solid #f3f4f6;
+  animation: mp-slide-down 0.2s ease;
+}
+@keyframes mp-slide-down {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.mp-review-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+@media (max-width: 576px) { .mp-review-scores-grid { grid-template-columns: repeat(2, 1fr); } }
+.mp-review-score-cell {
+  background: #f0faf4;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+.mp-review-score-cell .val {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--wf-primary, #006837);
+}
+.mp-review-score-cell .lbl {
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+.mp-review-text-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 576px) { .mp-review-text-grid { grid-template-columns: 1fr; } }
+.mp-text-block {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.mp-text-block-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mp-text-block-body {
+  font-size: 0.82rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.mp-empty {
+  text-align: center;
+  padding: 36px 16px;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+.mp-empty svg {
+  display: block;
+  margin: 0 auto 10px;
+  opacity: 0.35;
+}
+
+/* ── Loader ─────────────────────────────────────────────────── */
+.mp-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  gap: 14px;
+  color: #6b7280;
+  background: #f5f6fa;
+  padding: 24px;
+}
+.mp-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e5e7eb;
+  border-top-color: var(--wf-primary, #006837);
+  border-radius: 50%;
+  animation: mp-spin 0.75s linear infinite;
+}
+@keyframes mp-spin { to { transform: rotate(360deg); } }

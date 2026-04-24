@@ -1,0 +1,171 @@
+/**
+ * NotificationPreferences Page Styles
+ * 
+ * Settings page styling with card-based layout
+ * and interactive switches.
+ */
+
+/* Page Header */
+.notification-preferences-page h1 {
+  font-size: var(--font-size-xl, 1.953rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary);
+}
+
+/* Preferences Card */
+.preferences-card {
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+.preferences-card .card-header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.preferences-card .card-body {
+  padding: 1.25rem;
+}
+
+.preferences-card h6 {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+/* Category List */
+.category-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  transition: background-color 0.15s ease;
+}
+
+.category-item:hover {
+  background: var(--bg-secondary);
+}
+
+.category-item.border-bottom {
+  border-color: var(--border-color) !important;
+}
+
+.category-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: var(--font-size-base, 1rem);
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary-color);
+}
+
+.category-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.category-info h6 {
+  margin-bottom: 0.25rem;
+}
+
+/* Form Switch */
+.form-check-input:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.form-switch .form-check-input {
+  width: 3rem;
+  height: 1.5rem;
+  cursor: pointer;
+}
+
+.form-switch .form-check-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
+}
+
+/* Info Card */
+.info-card {
+  border-radius: 12px;
+  background: rgba(var(--primary-rgb), 0.05);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+}
+
+.info-card h6 {
+  color: var(--primary-color);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+/* Alert */
+.notification-preferences-page .alert-success {
+  border-radius: 8px;
+  border: none;
+}
+
+/* Dark Mode */
+[data-theme="dark"] .preferences-card {
+  background: var(--dark-card-bg);
+  border-color: var(--dark-border-color);
+}
+
+[data-theme="dark"] .preferences-card .card-header {
+  background: var(--dark-bg-secondary);
+  border-color: var(--dark-border-color);
+}
+
+[data-theme="dark"] .category-item:hover {
+  background: var(--dark-bg-secondary);
+}
+
+[data-theme="dark"] .category-item.border-bottom {
+  border-color: var(--dark-border-color) !important;
+}
+
+[data-theme="dark"] .info-card {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: rgba(var(--primary-rgb), 0.3);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .notification-preferences-page h1 {
+    font-size: var(--font-size-lg, 1.563rem);
+  }
+
+  .category-item {
+    padding: 1rem;
+  }
+
+  .category-icon {
+    width: 40px;
+    height: 40px;
+    font-size: var(--font-size-base, 1rem);
+  }
+
+  .form-switch .form-check-input {
+    width: 2.5rem;
+    height: 1.25rem;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .category-item {
+    transition: none;
+  }
+}

@@ -1,0 +1,48 @@
+{
+    "period": {
+        "hours": 24,
+        "start": "2025-11-27 15:45:10",
+        "end": "2025-11-28 15:45:10"
+    },
+    "system": {
+        "server_load": [
+            0.531206238678901,
+            0.531206238678901,
+            0.531206238678901
+        ],
+        "memory_usage": {
+            "current": 4194304,
+            "peak": 4194304,
+            "limit": "128M"
+        },
+        "disk_usage": {
+            "total": 511040286720,
+            "free": 13596463104,
+            "used": 497443823616,
+            "used_percentage": 97.34
+        },
+        "database_connections": {
+            "active_connections": 6,
+            "status": "ok"
+        },
+        "cache_status": {
+            "status": "healthy",
+            "driver": "file"
+        }
+    },
+    "api": {
+        "error": "API log file not found"
+    },
+    "errors": {
+        "error": "Error log file not found"
+    },
+    "security": {
+        "error": "Security log file not found"
+    },
+    "performance": {
+        "error": "Performance log file not found"
+    },
+    "business": {
+        "error": "Business log file not found"
+    }
+}

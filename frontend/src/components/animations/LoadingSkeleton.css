@@ -1,0 +1,100 @@
+/* LoadingSkeleton.css - Styles for loading skeleton components */
+
+.skeleton-text,
+.skeleton-title,
+.skeleton-circular,
+.skeleton-rectangular,
+.skeleton-card {
+  background-color: var(--color-gray-200, #E9ECEF);
+  border-radius: var(--radius-base, 4px);
+  display: block;
+  overflow: hidden;
+  position: relative;
+}
+
+.skeleton-circular {
+  border-radius: 50%;
+}
+
+.skeleton-rectangular {
+  border-radius: var(--radius-md, 6px);
+}
+
+.skeleton-card {
+  border-radius: var(--radius-lg, 8px);
+}
+
+.skeleton-text-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Product Card Skeleton */
+.product-card-skeleton {
+  background: var(--color-white, #ffffff);
+  border: var(--border-width-thin, 1px) solid var(--border-light, #e0e0e0);
+  border-radius: var(--card-radius, 8px);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
+}
+
+/* Table Row Skeleton */
+.table-row-skeleton td {
+  padding: 12px;
+}
+
+/* Stat Card Skeleton */
+.stat-card-skeleton {
+  background: var(--color-white, #ffffff);
+  border: var(--border-width-thin, 1px) solid var(--border-light, #e0e0e0);
+  border-radius: var(--card-radius, 8px);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
+}
+
+/* List Item Skeleton */
+.list-item-skeleton {
+  background: var(--color-white, #ffffff);
+  border-bottom: var(--border-width-thin, 1px) solid var(--border-light, #e0e0e0);
+}
+
+/* Accessibility - Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-text,
+  .skeleton-title,
+  .skeleton-circular,
+  .skeleton-rectangular,
+  .skeleton-card {
+    animation: none !important;
+  }
+}
+
+/* Loading pulse animation fallback for browsers without Framer Motion */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.skeleton-text:not([style*="animation"]),
+.skeleton-title:not([style*="animation"]),
+.skeleton-circular:not([style*="animation"]),
+.skeleton-rectangular:not([style*="animation"]),
+.skeleton-card:not([style*="animation"]) {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Responsive skeleton sizing */
+@media (max-width: 768px) {
+  .product-card-skeleton {
+    min-height: auto;
+  }
+  .stat-card-skeleton {
+    padding: 0.75rem;
+  }
+  .table-row-skeleton td {
+    padding: 8px;
+  }
+}

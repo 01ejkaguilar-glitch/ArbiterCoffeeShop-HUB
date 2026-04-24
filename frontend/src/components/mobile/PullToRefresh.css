@@ -1,0 +1,84 @@
+/**
+ * Pull to Refresh Styles
+ */
+
+.pull-to-refresh-container {
+  position: relative;
+  overflow-y: auto;
+  min-height: 100%;
+}
+
+/* Indicator */
+.ptr-indicator {
+  position: absolute;
+  top: -60px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ptr-indicator-content {
+  background: var(--color-primary, #2E7D32);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.ptr-indicator-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ptr-icon {
+  font-size: var(--font-size-base, 1rem);
+  transition: transform 0.2s ease;
+}
+
+.ptr-icon.threshold {
+  transform: rotate(180deg);
+}
+
+.ptr-icon.refreshing {
+  animation: ptr-spin 1s linear infinite;
+}
+
+@keyframes ptr-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ptr-text {
+  font-size: var(--font-size-sm, 0.8rem);
+  font-weight: var(--font-weight-medium, 500);
+  white-space: nowrap;
+}
+
+/* Content */
+.ptr-content {
+  min-height: 100%;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .ptr-icon.refreshing {
+    animation: none;
+  }
+  
+  .ptr-icon {
+    transition: none;
+  }
+}
