@@ -53,7 +53,11 @@ const Navbar = () => {
         const response = await apiService.get(API_ENDPOINTS.PRODUCTS.LIST);
         if (response.success && response.data) setProducts(response.data);
       } catch (error) {
-        console.error('Failed to fetch products for search:', error);
+        if (error?.code === 'ERR_NETWORK' || !error?.response) {
+          console.warn('Search products are temporarily unavailable due to network or SSL issues.');
+        } else {
+          console.error('Failed to fetch products for search:', error);
+        }
       }
     };
     fetchProducts();
@@ -88,7 +92,7 @@ const Navbar = () => {
           {/* Brand */}
           <Link to="/" className="app-navbar-brand" onClick={closeDrawer}>
             <img
-              src="/assets/arbiter-logo.png"
+              src="/assets/arbiterlogo.png"
               alt="Arbiter Coffee Hub Logo"
               width="40"
               height="40"

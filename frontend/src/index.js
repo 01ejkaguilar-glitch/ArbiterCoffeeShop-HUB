@@ -9,6 +9,9 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import * as serviceWorker from './utils/serviceWorker';
 
+const shouldEnableServiceWorker = process.env.NODE_ENV === 'production'
+  && process.env.REACT_APP_ENABLE_SERVICE_WORKER === 'true';
+
 // PWA install prompt and update notification
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -33,8 +36,8 @@ root.render(
   </React.StrictMode>
 );
 
-// Keep service worker disabled in local development to avoid stale cache/offline behavior.
-if (process.env.NODE_ENV === 'production') {
+// Service worker is opt-in for production to avoid noisy failures when deployment/TLS is not ready.
+if (shouldEnableServiceWorker) {
   serviceWorker.register({
     onSuccess: () => {
       console.log('App ready for offline use!');

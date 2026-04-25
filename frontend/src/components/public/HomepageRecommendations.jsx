@@ -63,7 +63,11 @@ const HomepageRecommendations = () => {
         await fetchPopularProducts();
       }
     } catch (err) {
-      console.error('Personalized recommendations fetch error:', err);
+      if (isTransportError(err)) {
+        console.warn('Recommendations are temporarily unavailable due to network or SSL issues.');
+      } else {
+        console.error('Personalized recommendations fetch error:', err);
+      }
       if (!isTransportError(err)) {
         await fetchPopularProducts();
       } else {
@@ -90,7 +94,11 @@ const HomepageRecommendations = () => {
         setRecommendations([]);
       }
     } catch (err) {
-      console.error('Popular products fetch error:', err);
+      if (isTransportError(err)) {
+        console.warn('Popular products are temporarily unavailable due to network or SSL issues.');
+      } else {
+        console.error('Popular products fetch error:', err);
+      }
       setError('Unable to load recommendations');
     } finally {
       setLoading(false);

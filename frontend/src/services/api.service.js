@@ -6,6 +6,62 @@
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
 
+const NETWORK_ERROR_LOG_TTL_MS = 60000;
+const recentNetworkErrorLogs = new Map();
+
+const ABSOLUTE_URL_REGEX = /^https?:\/\//i;
+
+const resolveRequestUrl = (config = {}) => {
+  const rawUrl = config.url || '';
+
+  if (!rawUrl) {
+    return '';
+  }
+
+  if (ABSOLUTE_URL_REGEX.test(rawUrl)) {
+    return rawUrl;
+  }
+
+  return `${config.baseURL || ''}${rawUrl}`;
+};
+
+const isLikelyHttpsTransportIssue = (error, requestUrl) => {
+  const isBrowserOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  return Boolean(
+    isBrowserOnline &&
+    error?.message === 'Network Error' &&
+    typeof requestUrl === 'string' &&
+    requestUrl.startsWith('https://')
+  );
+};
+
+const logNetworkIssueOnce = (error) => {
+  const method = error?.config?.method ? error.config.method.toUpperCase() : 'GET';
+  const requestUrl = resolveRequestUrl(error?.config);
+  const key = `${method}:${requestUrl || 'unknown'}`;
+  const now = Date.now();
+  const lastLoggedAt = recentNetworkErrorLogs.get(key) || 0;
+
+  if (now - lastLoggedAt < NETWORK_ERROR_LOG_TTL_MS) {
+    return;
+  }
+
+  recentNetworkErrorLogs.set(key, now);
+
+  if (isLikelyHttpsTransportIssue(error, requestUrl)) {
+    console.error('[API] HTTPS transport failed (possible TLS/certificate, CORS, DNS, or network issue).', {
+      method,
+      url: requestUrl,
+    });
+    return;
+  }
+
+  console.error('[API] No response from server.', {
+    method,
+    url: requestUrl,
+  });
+};
+
 // Create axios instance
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -99,7 +155,7 @@ apiClient.interceptors.response.use(
       }
     } else if (error.request) {
       // Request made but no response
-      console.error('No response from server');
+      logNetworkIssueOnce(error);
     } else {
       // Error in request setup
       console.error('Error:', error.message);
