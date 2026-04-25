@@ -12,14 +12,6 @@ import * as serviceWorker from './utils/serviceWorker';
 const shouldEnableServiceWorker = process.env.NODE_ENV === 'production'
   && process.env.REACT_APP_ENABLE_SERVICE_WORKER === 'true';
 
-// PWA install prompt and update notification
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  window.dispatchEvent(new CustomEvent('pwa-install-available'));
-});
-
 // Listen for service worker update messages
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
