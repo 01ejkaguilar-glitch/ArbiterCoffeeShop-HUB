@@ -6,6 +6,11 @@ import { useAuth } from '../../context/AuthContext';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS, BACKEND_BASE_URL } from '../../config/api';
 
+const isTransportError = (error) => {
+  if (!error) return false;
+  return error.code === 'ERR_NETWORK' || !error.response;
+};
+
 const HomepageRecommendations = () => {
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState([]);
@@ -59,7 +64,11 @@ const HomepageRecommendations = () => {
       }
     } catch (err) {
       console.error('Personalized recommendations fetch error:', err);
-      await fetchPopularProducts();
+      if (!isTransportError(err)) {
+        await fetchPopularProducts();
+      } else {
+        setError('Unable to load recommendations');
+      }
     } finally {
       setLoading(false);
     }

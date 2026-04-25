@@ -23,6 +23,11 @@ const isLocalhost = Boolean(
  */
 export function register(config = {}) {
   if ('serviceWorker' in navigator) {
+    if (!window.isSecureContext) {
+      console.warn('[SW] Skipping registration because context is not secure');
+      return;
+    }
+
     const swUrl = `${process.env.PUBLIC_URL || ''}/service-worker.js`;
 
     if (isLocalhost) {
@@ -36,8 +41,8 @@ export function register(config = {}) {
         );
       });
     } else {
-      // Not localhost - register service worker
-      registerValidSW(swUrl, config);
+      // Validate script availability before registration to avoid runtime registration errors.
+      checkValidServiceWorker(swUrl, config);
     }
 
     // Set up online/offline listeners
@@ -101,22 +106,25 @@ function checkValidServiceWorker(swUrl, config) {
       const contentType = response.headers.get('content-type');
       
       if (
-        response.status === 404 ||
+        !response.ok ||
         (contentType != null && contentType.indexOf('javascript') === -1)
       ) {
-        // No service worker found - reload the page
-        navigator.serviceWorker.ready.then((registration) => {
-          registration.unregister().then(() => {
-            window.location.reload();
-          });
+        // No valid service worker script found - unregister stale workers if any, and continue.
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          if (registrations.length > 0) {
+            registrations.forEach((registration) => registration.unregister());
+            console.warn('[SW] Removed stale service worker registrations because script is unavailable');
+          } else {
+            console.warn('[SW] Service worker script is unavailable. Skipping registration.');
+          }
         });
       } else {
         // Service worker found - register it
         registerValidSW(swUrl, config);
       }
     })
-    .catch(() => {
-      console.log('[SW] No internet connection found. App is running in offline mode.');
+    .catch((error) => {
+      console.warn('[SW] Unable to validate service worker script. Registration skipped.', error?.message || error);
     });
 }
 
