@@ -7,7 +7,7 @@ const isLocalRuntime = typeof window !== 'undefined'
   && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 const isProductionFrontendHost = typeof window !== 'undefined'
-  && window.location.hostname === 'arbitercoffee.shop';
+  && ['arbitercoffee.shop', 'www.arbitercoffee.shop'].includes(window.location.hostname);
 
 const apiBaseFromEnv = process.env.REACT_APP_API_URL;
 const backendBaseFromEnv = process.env.REACT_APP_BACKEND_URL;
