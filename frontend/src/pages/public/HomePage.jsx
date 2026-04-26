@@ -49,8 +49,8 @@ const values = [
 ];
 
 const stats = [
-  { value: '10K+', label: 'Cups Served Monthly' },
-  { value: '50+', label: 'Coffee Varieties' },
+  { value: '300+', label: 'Cups Served Monthly' },
+  { value: '20+', label: 'Coffee Origins' },
   { value: '100%', label: 'Arabica Beans' },
   { value: '4.9★', label: 'Customer Rating' },
 ];
@@ -81,7 +81,7 @@ const HomePage = () => {
         email="contact@arbitercoffee.com"
         openingHours={[
           { dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], opens: "08:00", closes: "22:00" },
-          { dayOfWeek: ["Saturday", "Sunday"], opens: "09:00", closes: "23:00" }
+          { dayOfWeek: ["Saturday", "Sunday"], opens: "09:00 AM", closes: "09:00 PM" }
         ]}
         priceRange="₱₱"
       />
