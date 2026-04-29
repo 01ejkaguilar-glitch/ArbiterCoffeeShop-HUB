@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
 import { FaShoppingCart, FaMinus, FaPlus, FaHeart, FaRegHeart, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
@@ -6,7 +6,6 @@ import { BACKEND_BASE_URL, API_ENDPOINTS } from '../../config/api';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import LoadingFallback from '../../components/common/LoadingFallback';
-import ProductRecommendations from '../../components/public/ProductRecommendations';
 import { useProduct } from '../../hooks/useProducts';
 import BottomNavigation from '../../components/mobile/BottomNavigation';
 import SwipeableGallery from '../../components/mobile/SwipeableGallery';
@@ -16,6 +15,8 @@ import { addToRecentlyViewed, removeFromRecentlyViewed } from '../../components/
 import { useToast } from '../../components/animations/Toast';
 import apiService from '../../services/api.service';
 import './ProductDetailPage.css';
+
+const ProductRecommendations = lazy(() => import('../../components/public/ProductRecommendations'));
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -27,6 +28,7 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
   // If the product no longer exists (404), evict it from recently-viewed localStorage
   useEffect(() => {
@@ -57,6 +59,30 @@ const ProductDetailPage = () => {
     };
     checkFavorite();
   }, [user, product]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const reveal = () => {
+      if (!cancelled) {
+        setShowRecommendations(true);
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(reveal, { timeout: 2500 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timerId = window.setTimeout(reveal, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, [product]);
 
   const handleQuantityChange = (change) => {
     const newQuantity = quantity + change;
@@ -164,6 +190,11 @@ const ProductDetailPage = () => {
                 src={productImage}
                 alt={product.name}
                 className="pdp-image"
+                width="800"
+                height="800"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 onError={(e) => { e.target.src = '/assets/images/product-placeholder.png'; }}
               />
             </div>
@@ -256,7 +287,13 @@ const ProductDetailPage = () => {
 
         {/* Recommendations */}
         <div className="pdp-recommendations">
-          <ProductRecommendations currentProductId={product.id} />
+          {showRecommendations ? (
+            <Suspense fallback={<div className="text-center py-4 text-muted">Loading similar products...</div>}>
+              <ProductRecommendations currentProductId={product.id} />
+            </Suspense>
+          ) : (
+            <div className="text-center py-4 text-muted">Similar products will load shortly...</div>
+          )}
         </div>
 
 

@@ -157,7 +157,10 @@ const AboutPage = () => {
                         className="team-photo" 
                         src={member.photo_url.startsWith('http') ? member.photo_url : `${BACKEND_BASE_URL}${member.photo_url}`}
                         alt={`${member.name}, ${member.position}`}
+                        width="520"
+                        height="260"
                         loading="lazy"
+                        decoding="async"
                       />
                     )}
                     <div className="team-body">

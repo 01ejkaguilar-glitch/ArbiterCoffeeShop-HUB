@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import {
@@ -6,10 +6,11 @@ import {
   FaSearch, FaMugHot, FaBoxOpen, FaSmile,
   FaSeedling, FaHandshake, FaHeart, FaUsers
 } from 'react-icons/fa';
-import HomepageRecommendations from '../../components/public/HomepageRecommendations';
 import BottomNavigation from '../../components/mobile/BottomNavigation';
 import SEO from '../../components/SEO';
 import { OrganizationSchema, WebSiteSchema } from '../../components/StructuredData';
+
+const HomepageRecommendations = lazy(() => import('../../components/public/HomepageRecommendations'));
 
 const features = [
   {
@@ -56,6 +57,32 @@ const stats = [
 ];
 
 const HomePage = () => {
+  const [showRecommendations, setShowRecommendations] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const reveal = () => {
+      if (!cancelled) {
+        setShowRecommendations(true);
+      }
+    };
+
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(reveal, { timeout: 2500 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timerId = window.setTimeout(reveal, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, []);
+
   return (
     <main role="main">
       <SEO
@@ -192,7 +219,13 @@ const HomePage = () => {
             <div className="section-divider" />
             <p>Handpicked selections from our premium collection</p>
           </div>
-          <HomepageRecommendations />
+          {showRecommendations ? (
+            <Suspense fallback={<div className="text-center py-4 text-muted">Loading featured products...</div>}>
+              <HomepageRecommendations />
+            </Suspense>
+          ) : (
+            <div className="text-center py-4 text-muted">Featured products will load shortly...</div>
+          )}
         </Container>
       </section>
 

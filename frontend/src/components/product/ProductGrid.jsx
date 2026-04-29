@@ -63,7 +63,10 @@ function ProductGrid({
     );
   }
 
+                       width="300"
+                       height="250"
   // Mobile variant
+                       decoding="async"
   return (
     <Row className="g-4">
       {products.length > 0 ? (
@@ -106,7 +109,10 @@ function ProductGrid({
                   </Card.Text>
                   <div className="mt-auto">
                     <div className="d-flex justify-content-between align-items-center mb-2">
+                        width="300"
+                        height="250"
                       <span className="product-price fw-bold">
+                        decoding="async"
                         ₱{product.price ? parseFloat(product.price).toFixed(2) : '0.00'}
                       </span>
                       {product.stock_quantity > 0 ? (

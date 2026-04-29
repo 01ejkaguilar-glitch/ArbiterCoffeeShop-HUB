@@ -92,6 +92,8 @@ const ImageGallery = ({
           src={activeImage.url || activeImage}
           alt={activeImage.alt || `${productName} - Image ${activeIndex + 1}`}
           className="main-image"
+          width="800"
+          height="800"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
@@ -100,6 +102,8 @@ const ImageGallery = ({
             transform: 'scale(2)'
           } : {}}
           loading="eager"
+          decoding="async"
+          fetchPriority="high"
         />
         
         {/* Zoom indicator */}
@@ -168,7 +172,10 @@ const ImageGallery = ({
               <img
                 src={image.url || image}
                 alt={`Thumbnail ${index + 1}`}
+                width="64"
+                height="64"
                 loading="lazy"
+                decoding="async"
               />
             </motion.button>
           ))}
@@ -250,6 +257,9 @@ const ImageGallery = ({
                 src={activeImage.url || activeImage}
                 alt={activeImage.alt || `${productName} - Image ${activeIndex + 1}`}
                 className="fullscreen-image"
+                width="1200"
+                height="1200"
+                decoding="async"
                 style={{ transform: `scale(${zoomLevel})` }}
               />
             </motion.div>
@@ -290,7 +300,10 @@ const ImageGallery = ({
                   <img
                     src={image.url || image}
                     alt={`Thumbnail ${index + 1}`}
+                    width="48"
+                    height="48"
                     loading="lazy"
+                    decoding="async"
                   />
                 </button>
               ))}

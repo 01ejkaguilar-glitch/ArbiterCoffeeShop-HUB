@@ -40,7 +40,7 @@ const STATUS_FILTERS = [
 
 /** Default endpoints (barista WORKFORCE API) */
 const defaultEndpoints = {
-  inventory: () => apiService.get(API_ENDPOINTS.WORKFORCE.INVENTORY, { params: { per_page: 200 } }),
+  inventory: () => apiService.get(API_ENDPOINTS.WORKFORCE.INVENTORY, { per_page: 200 }),
   adjust: (itemId, payload) => apiService.post(API_ENDPOINTS.WORKFORCE.INVENTORY_ADJUST(itemId), payload),
 };
 

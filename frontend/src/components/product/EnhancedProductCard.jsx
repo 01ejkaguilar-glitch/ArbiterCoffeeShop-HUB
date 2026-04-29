@@ -121,7 +121,10 @@ const EnhancedProductCard = ({
                   src={productImage}
                   alt={product.name}
                   className={`product-image ${imageLoaded ? 'loaded' : ''}`}
+                  width="400"
+                  height="300"
                   loading="lazy"
+                  decoding="async"
                   onLoad={() => setImageLoaded(true)}
                 />
               ) : (

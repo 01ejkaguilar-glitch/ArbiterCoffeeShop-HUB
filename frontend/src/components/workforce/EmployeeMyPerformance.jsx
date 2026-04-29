@@ -159,7 +159,7 @@ const EmployeeMyPerformance = ({
     try {
       setLiveLoad(true);
       setLiveErr('');
-      const raw = await apiService.get(liveEndpoint, { params: { period: p } });
+      const raw = await apiService.get(liveEndpoint, { period: p });
       setLiveStats(raw?.data || raw);
     } catch (err) {
       setLiveErr(err?.response?.data?.message || 'Failed to load live stats.');

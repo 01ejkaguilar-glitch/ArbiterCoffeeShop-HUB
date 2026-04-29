@@ -63,6 +63,7 @@ const SearchDropdown = ({
   placeholder = "Search products...",
   className = "",
   onResultClick,
+  onFocus,
   maxResults = 6
 }) => {
   const navigate = useNavigate();
@@ -168,6 +169,9 @@ const SearchDropdown = ({
   // Handle focus/blur
   const handleFocus = () => {
     setIsFocused(true);
+    if (onFocus) {
+      onFocus();
+    }
     setShowSuggestions(true);
   };
 
@@ -274,6 +278,10 @@ const SearchDropdown = ({
                           src={product.image}
                           alt=""
                           className="search-result-image"
+                          width="48"
+                          height="48"
+                          loading="lazy"
+                          decoding="async"
                         />
                       )}
                       <div className="search-result-content">

@@ -291,7 +291,7 @@ export function NotificationCenterProvider({ children }) {
           const registration = await navigator.serviceWorker.ready;
           const existing = await registration.pushManager.getSubscription();
           if (!existing) {
-            const response = await apiService.get('/notifications/vapid-key');
+            const response = await apiService.get(API_ENDPOINTS.NOTIFICATIONS.VAPID_KEY);
             if (response?.publicKey) {
               const urlBase64 = response.publicKey
                 .replace(/-/g, '+')

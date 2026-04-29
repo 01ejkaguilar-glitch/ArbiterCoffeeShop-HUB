@@ -3,11 +3,37 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/variables.css';
-import './styles/overrides.css';
-import './styles/utilities.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import * as serviceWorker from './utils/serviceWorker';
+
+const DeferredGlobalStyles = () => {
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadStyles = () => {
+      if (cancelled) return;
+      import('./styles/overrides.css');
+      import('./styles/utilities.css');
+    };
+
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(loadStyles, { timeout: 2000 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timerId = window.setTimeout(loadStyles, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timerId);
+    };
+  }, []);
+
+  return null;
+};
 
 const shouldEnableServiceWorker = process.env.NODE_ENV === 'production'
   && process.env.REACT_APP_ENABLE_SERVICE_WORKER === 'true';
@@ -24,6 +50,7 @@ if ('serviceWorker' in navigator) {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
+    <DeferredGlobalStyles />
     <App />
   </React.StrictMode>
 );

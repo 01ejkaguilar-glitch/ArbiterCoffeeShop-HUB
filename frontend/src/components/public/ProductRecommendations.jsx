@@ -125,7 +125,11 @@ const ProductRecommendations = ({ currentProductId, limit = 3 }) => {
                   '/assets/images/product-placeholder.png'}
                 alt={recommendation.product.name}
                 className="product-image"
+                width="300"
+                height="250"
                 style={{ height: '150px', objectFit: 'cover' }}
+                loading="lazy"
+                decoding="async"
                 onError={(e) => { e.target.src = '/assets/images/product-placeholder.png'; }}
               />
               <Card.Body className="d-flex flex-column p-3">

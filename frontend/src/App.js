@@ -4,8 +4,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './context/AuthContext';
-import { KITCHEN_THEME } from './constants/workforceThemes';
-import { KITCHEN_INVENTORY_TYPES } from './components/workforce/EmployeeInventory';
+import { KITCHEN_THEME, KITCHEN_INVENTORY_TYPES } from './constants/workforceThemes';
 import apiService from './services/api.service';
 import { API_ENDPOINTS } from './config/api';
 import { CartProvider } from './context/CartContext';
@@ -17,21 +16,21 @@ import { ToastProvider } from './components/animations/Toast';
 
 // Layout Components
 import PublicLayout from './components/layout/PublicLayout';
-import AuthLayout from './components/layout/AuthLayout';
-import CustomerLayout from './components/layout/CustomerLayout';
-import AdminLayout from './components/layout/AdminLayout';
-import BaristaLayout from './components/layout/BaristaLayout';
-import KitchenLayout from './components/layout/KitchenLayout';
+const AuthLayout = lazy(() => import('./components/layout/AuthLayout'));
+const CustomerLayout = lazy(() => import('./components/layout/CustomerLayout'));
+const AdminLayout = lazy(() => import('./components/layout/AdminLayout'));
+const BaristaLayout = lazy(() => import('./components/layout/BaristaLayout'));
+const KitchenLayout = lazy(() => import('./components/layout/KitchenLayout'));
 
 // Common Components
 import LoadingFallback from './components/common/LoadingFallback';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import DashboardRedirect from './components/common/DashboardRedirect';
+const DashboardRedirect = lazy(() => import('./components/common/DashboardRedirect'));
 
-// Public Pages - Eager load for better initial UX
+// Public Pages - Keep the homepage eager; lazy-load secondary pages to trim the initial bundle
 import HomePage from './pages/public/HomePage';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
 
 // Auth Pages - Lazy loaded (accessed infrequently after first visit)
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
@@ -124,7 +123,7 @@ const KitchenMyPerformance = lazy(() => import('./components/workforce/EmployeeM
 
 // Kitchen inventory config for inline route props
 const kitchenEndpoints = {
-  inventory: () => apiService.get(API_ENDPOINTS.KITCHEN.INVENTORY, { params: { per_page: 200 } }),
+  inventory: () => apiService.get(API_ENDPOINTS.KITCHEN.INVENTORY, { per_page: 200 }),
   adjust: (itemId, payload) => apiService.post(API_ENDPOINTS.KITCHEN.INVENTORY_ADJUST(itemId), payload),
 };
 const kitchenBuildPayload = (_item, newQty) => ({ quantity: newQty, reason: 'Kitchen checklist adjustment' });

@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Badge, Dropdown } from 'react-bootstrap';
 import { FaShoppingCart, FaUser, FaCoffee, FaSignOutAlt, FaTachometerAlt, FaUtensils, FaBars, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { SearchDropdown } from '../search';
-import { NotificationBell } from '../notifications';
 import apiService from '../../services/api.service';
 import { API_ENDPOINTS } from '../../config/api';
 import './Navbar.css';
+
+const NotificationBell = lazy(() => import('../notifications/NotificationBell'));
 
 const NAV_LINKS = [
   { to: '/',              label: 'Home',          exact: true },
@@ -26,6 +27,7 @@ const Navbar = () => {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [products, setProducts] = useState([]);
+  const [searchProductsLoaded, setSearchProductsLoaded] = useState(false);
 
   // Close on route change
   useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
@@ -46,12 +48,16 @@ const Navbar = () => {
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
-  // Fetch products for search
-  useEffect(() => {
+  const fetchSearchProducts = useCallback(async () => {
+    if (searchProductsLoaded) return;
+
     const fetchProducts = async () => {
       try {
         const response = await apiService.get(API_ENDPOINTS.PRODUCTS.LIST);
-        if (response.success && response.data) setProducts(response.data);
+        if (response.success && response.data) {
+          setProducts(response.data);
+          setSearchProductsLoaded(true);
+        }
       } catch (error) {
         if (error?.code === 'ERR_NETWORK' || !error?.response) {
           console.warn('Search products are temporarily unavailable due to network or SSL issues.');
@@ -60,8 +66,9 @@ const Navbar = () => {
         }
       }
     };
+
     fetchProducts();
-  }, []);
+  }, [searchProductsLoaded]);
 
   const handleLogout = async () => {
     await logout();
@@ -96,7 +103,9 @@ const Navbar = () => {
               alt="Arbiter Coffee Hub Logo"
               width="40"
               height="40"
-              loading="lazy"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
             <span>Arbiter Coffee Hub</span>
           </Link>
@@ -120,6 +129,7 @@ const Navbar = () => {
               <SearchDropdown
                 products={products}
                 placeholder="Search products..."
+                onFocus={fetchSearchProducts}
                 onResultClick={(product) => navigate(`/products/${product.id}`)}
               />
             </div>
@@ -127,9 +137,11 @@ const Navbar = () => {
             <CartIcon />
 
             {isAuthenticated && (
-              <div className="app-nav-icon-btn-wrap">
-                <NotificationBell />
-              </div>
+              <Suspense fallback={null}>
+                <div className="app-nav-icon-btn-wrap">
+                  <NotificationBell />
+                </div>
+              </Suspense>
             )}
 
             {isAuthenticated ? (
@@ -166,9 +178,11 @@ const Navbar = () => {
           <div className="app-navbar-mobile-actions">
             <CartIcon />
             {isAuthenticated && (
-              <div className="app-nav-icon-btn-wrap">
-                <NotificationBell />
-              </div>
+              <Suspense fallback={null}>
+                <div className="app-nav-icon-btn-wrap">
+                  <NotificationBell />
+                </div>
+              </Suspense>
             )}
             <button
               className="app-navbar-hamburger"
@@ -214,6 +228,7 @@ const Navbar = () => {
           <SearchDropdown
             products={products}
             placeholder="Search products..."
+            onFocus={fetchSearchProducts}
             onResultClick={(product) => { navigate(`/products/${product.id}`); closeDrawer(); }}
           />
         </div>

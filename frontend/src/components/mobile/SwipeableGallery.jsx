@@ -157,7 +157,12 @@ const SwipeableGallery = ({
               src={images[currentIndex]}
               alt={`${altPrefix} ${currentIndex + 1}`}
               className="swipeable-gallery-image"
+              width="800"
+              height="800"
               draggable={false}
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
           </motion.div>
         </AnimatePresence>

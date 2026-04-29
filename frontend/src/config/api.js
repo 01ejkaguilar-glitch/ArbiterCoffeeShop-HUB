@@ -137,6 +137,7 @@ export const API_ENDPOINTS = {
     MARK_ALL_READ: `${API_BASE_URL}/notifications/mark-all-read`,
     DELETE: (id) => `${API_BASE_URL}/notifications/${id}`,
     CLEAR_ALL: `${API_BASE_URL}/notifications`,
+    VAPID_KEY: `${API_BASE_URL}/notifications/vapid-key`,
   },
 
   // Announcements

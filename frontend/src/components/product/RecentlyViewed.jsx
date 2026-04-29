@@ -217,7 +217,10 @@ const RecentlyViewed = ({
                             src={`${BACKEND_BASE_URL}${item.image_url}`}
                             alt={item.name}
                             className="card-image"
+                            width="300"
+                            height="225"
                             loading="lazy"
+                            decoding="async"
                           />
                         ) : (
                           <div className="card-image-placeholder">

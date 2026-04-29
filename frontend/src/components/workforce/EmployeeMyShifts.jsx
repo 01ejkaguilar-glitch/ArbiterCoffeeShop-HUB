@@ -76,7 +76,7 @@ const EmployeeMyShifts = ({ theme = DEFAULT_THEME }) => {
   const fetchShifts = useCallback(async (month, year) => {
     try {
       setLoading(true);
-      const res = await apiService.get(API_ENDPOINTS.WORKFORCE.MY_SHIFTS, { params: { month, year } });
+      const res = await apiService.get(API_ENDPOINTS.WORKFORCE.MY_SHIFTS, { month, year });
       const data = res.data?.data ?? res.data;
       setShifts(Array.isArray(data) ? data : []);
     } catch {

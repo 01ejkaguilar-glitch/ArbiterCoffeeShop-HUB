@@ -21,6 +21,22 @@ const ContactPage = () => {
   const [contactInfo, setContactInfo] = useState(null);
   const [operatingHours, setOperatingHours] = useState(null);
 
+  const formatTime12Hour = (timeValue) => {
+    if (!timeValue) return '';
+
+    const [hours, minutes = '00'] = String(timeValue).split(':');
+    const parsedHours = Number(hours);
+
+    if (Number.isNaN(parsedHours)) {
+      return String(timeValue);
+    }
+
+    const period = parsedHours >= 12 ? 'PM' : 'AM';
+    const normalizedHours = parsedHours % 12 || 12;
+
+    return `${normalizedHours}:${minutes.padStart(2, '0')} ${period}`;
+  };
+
   useEffect(() => {
     fetchContactInfo();
     fetchOperatingHours();
@@ -314,7 +330,9 @@ const ContactPage = () => {
                     <ListGroup.Item key={day} className="px-0 d-flex justify-content-between">
                       <span className="text-capitalize fw-bold">{day}</span>
                       <span className={!hours.is_open ? 'text-danger' : ''}>
-                        {hours.is_open ? `${hours.open} - ${hours.close}` : 'Closed'}
+                        {hours.is_open
+                          ? `${formatTime12Hour(hours.open)} - ${formatTime12Hour(hours.close)}`
+                          : 'Closed'}
                       </span>
                     </ListGroup.Item>
                   ))}

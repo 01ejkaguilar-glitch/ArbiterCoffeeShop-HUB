@@ -51,7 +51,7 @@ const TrainingInsights = () => {
     setError(null);
     try {
       const [perfRes, tasksRes, shiftRes] = await Promise.allSettled([
-        apiService.get(API_ENDPOINTS.BARISTA.PERFORMANCE, { params: { period: p } }),
+        apiService.get(API_ENDPOINTS.BARISTA.PERFORMANCE, { period: p }),
         apiService.get(API_ENDPOINTS.BARISTA.TASKS_TODAY),
         apiService.get(API_ENDPOINTS.BARISTA.SHIFT_CURRENT),
       ]);
