@@ -63,7 +63,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->report(function (Throwable $e) {
             $errorTracking = app(\App\Services\ErrorTrackingService::class);
-            $errorTracking->logException($e, request());
+
+            $req = app()->bound('request') ? request() : null;
+
+            $errorTracking->logException($e, $req);
         });
 
         // Customize exception rendering for API requests
