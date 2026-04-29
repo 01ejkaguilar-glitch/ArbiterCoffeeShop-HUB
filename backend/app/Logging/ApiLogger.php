@@ -14,7 +14,7 @@ class ApiLogger implements ProcessorInterface
      */
     public function __invoke(LogRecord $record): LogRecord
     {
-        $request = request();
+        $request = app()->bound('request') ? request() : null;
 
         if ($request instanceof Request) {
             $extra = $record->extra ?? [];
