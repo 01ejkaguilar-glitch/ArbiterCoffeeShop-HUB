@@ -11,24 +11,24 @@ import { CartProvider } from './context/CartContext';
 import { NotificationCenterProvider } from './context/NotificationContext';
 import { NotificationProvider } from './components/common/NotificationSystem';
 import { ToastProvider } from './components/animations/Toast';
+import PublicLayout from './components/layout/PublicLayout';
+import LoadingFallback from './components/common/LoadingFallback';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import HomePage from './pages/public/HomePage';
 
 // Styles loaded in index.js (bootstrap -> variables -> overrides -> utilities)
 
-// Layout Components
-import PublicLayout from './components/layout/PublicLayout';
+// Layout Components - Lazy loaded
 const AuthLayout = lazy(() => import('./components/layout/AuthLayout'));
 const CustomerLayout = lazy(() => import('./components/layout/CustomerLayout'));
 const AdminLayout = lazy(() => import('./components/layout/AdminLayout'));
 const BaristaLayout = lazy(() => import('./components/layout/BaristaLayout'));
 const KitchenLayout = lazy(() => import('./components/layout/KitchenLayout'));
 
-// Common Components
-import LoadingFallback from './components/common/LoadingFallback';
-import ErrorBoundary from './components/common/ErrorBoundary';
+// Common Components - Lazy loaded
 const DashboardRedirect = lazy(() => import('./components/common/DashboardRedirect'));
 
 // Public Pages - Keep the homepage eager; lazy-load secondary pages to trim the initial bundle
-import HomePage from './pages/public/HomePage';
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
 
