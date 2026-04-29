@@ -66,7 +66,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             $req = app()->bound('request') ? request() : null;
 
-            $errorTracking->logException($e, $req);
+            $errorTracking->logException($e, app()->bound('request') ? request() : null);
         });
 
         // Customize exception rendering for API requests
