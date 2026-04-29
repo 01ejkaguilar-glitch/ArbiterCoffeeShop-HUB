@@ -12,17 +12,55 @@ const isProductionFrontendHost = typeof window !== 'undefined'
 const apiBaseFromEnv = process.env.REACT_APP_API_URL;
 const backendBaseFromEnv = process.env.REACT_APP_BACKEND_URL;
 
+const productionApiBase = 'https://api.arbitercoffee.shop/api/v1';
+const productionBackendBase = 'https://api.arbitercoffee.shop';
+
 const sameOriginApiBase = typeof window !== 'undefined'
   ? `${window.location.origin}/api/v1`
   : '/api/v1';
 
-const API_BASE_URL = isProductionFrontendHost
-  ? sameOriginApiBase
-  : (apiBaseFromEnv || (isLocalRuntime ? 'http://localhost:8000/api/v1' : sameOriginApiBase));
+const isLocalhostApiUrl = (value) => typeof value === 'string'
+  && (value.includes('localhost:8000') || value.includes('127.0.0.1:8000'));
 
-const BACKEND_BASE_URL = isProductionFrontendHost
-  ? window.location.origin
-  : (backendBaseFromEnv || (isLocalRuntime ? 'http://localhost:8000' : window.location.origin));
+const resolveApiBaseUrl = () => {
+  if (isProductionFrontendHost) {
+    return apiBaseFromEnv && !isLocalhostApiUrl(apiBaseFromEnv)
+      ? apiBaseFromEnv
+      : productionApiBase;
+  }
+
+  if (apiBaseFromEnv && !isLocalhostApiUrl(apiBaseFromEnv)) {
+    return apiBaseFromEnv;
+  }
+
+  if (isLocalRuntime) {
+    return 'http://localhost:8000/api/v1';
+  }
+
+  return sameOriginApiBase;
+};
+
+const resolveBackendBaseUrl = () => {
+  if (isProductionFrontendHost) {
+    return backendBaseFromEnv && !isLocalhostApiUrl(backendBaseFromEnv)
+      ? backendBaseFromEnv
+      : productionBackendBase;
+  }
+
+  if (backendBaseFromEnv && !isLocalhostApiUrl(backendBaseFromEnv)) {
+    return backendBaseFromEnv;
+  }
+
+  if (isLocalRuntime) {
+    return 'http://localhost:8000';
+  }
+
+  return window.location.origin;
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
+
+const BACKEND_BASE_URL = resolveBackendBaseUrl();
 
 export default API_BASE_URL;
 export { BACKEND_BASE_URL };
