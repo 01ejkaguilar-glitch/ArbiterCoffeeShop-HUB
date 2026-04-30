@@ -22,3 +22,5 @@ tmpclaude-*
 # Docs binaries (optional — remove if you want to track them)
 # docs/*.pdf
 # docs/*.docx
+
+sync_config.jsonc
